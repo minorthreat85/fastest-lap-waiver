@@ -16,103 +16,61 @@
   <style>
     :root { color-scheme: dark; }
     html, body {
-      margin: 0; height: 100%;
-      background: #000; color: #fff;
+      margin:0; height:100%;
+      background:#000; color:#fff;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, sans-serif;
     }
-    body {
-      display: grid;
-      grid-template-rows: auto 1fr auto;
-      min-height: 100dvh;
-      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-    }
-    header, footer { text-align:center; font-size:14px; padding:8px; color:#aaa; }
-    main { display: grid; place-items: center; padding: 12px; }
-
-    .wrap { width: min(100vw - 24px, 100vh * (16/9)); max-width: 1024px; display: grid; gap: 16px; justify-items: center; }
-    h1 { margin: 6px 0; font-size: clamp(18px, 3.2vw, 28px); text-align:center; }
-
+    body { display:grid; place-items:center; padding: 12px; }
+    .wrap { width:min(100vw - 24px, 100vh * (16/9)); max-width:1024px; display:grid; gap:16px; justify-items:center; }
+    h1 { margin:6px 0; font-size:clamp(18px,3.2vw,28px); text-align:center; }
     .btn {
-      padding: 16px 28px; border-radius: 12px;
-      background: #e60000; color: #fff;
-      font-size: clamp(16px, 2.6vw, 20px); font-weight: 700;
-      border: none; cursor: pointer;
+      padding:16px 28px; border-radius:12px;
+      background:#e60000; color:#fff;
+      font-size:clamp(16px,2.6vw,20px); font-weight:700;
+      border:0; cursor:pointer;
     }
-
     #tutorialVideo {
-      width: 100%; aspect-ratio: 16/9;
-      background: #000; display: none;
+      width:100%; aspect-ratio:16/9;
+      background:#000; display:none;
     }
-
-    #waiverSection { display:none; width:100%; max-width:1100px; margin:0 auto; }
-    #waiverFrame { width:100%; height:1800px; border:0; background:#000; }
-
-    #continueWrap { display:none; text-align:center; }
-    #continueBtn { background:#444; }
-    #continueNote { color:#aaa; font-size:13px; margin-top:6px; }
   </style>
 </head>
 <body>
-  <header></header>
+  <div class="wrap">
+    <h1>Tap to Watch Tutorial, Then Sign Waiver</h1>
 
-  <main>
-    <section class="wrap" id="videoSection">
-      <h1>Tap to Watch Tutorial, Then Sign Waiver</h1>
+    <button id="startVideoBtn" class="btn">🎬 Tap to Start Video</button>
 
-      <button id="startVideoBtn" class="btn">🎬 Tap to Start Video</button>
-
-      <!-- Replace with your actual MP4 file path -->
-      <video id="tutorialVideo" playsinline preload="metadata" controls>
-        <source src="./Sim-Tutorial.mp4" type="video/mp4">
-      </video>
-
-      <div id="continueWrap">
-        <button id="continueBtn" class="btn">Continue to Waiver</button>
-        <div id="continueNote">If the waiver doesn’t appear automatically, tap here.</div>
-      </div>
-    </section>
-
-    <section id="waiverSection">
-      <iframe id="waiverFrame" src="https://form.jotform.com/220716898706063"></iframe>
-    </section>
-  </main>
-
-  <footer></footer>
+    <!-- 🔁 Replace filename with your actual MP4 in the repo root -->
+    <video id="tutorialVideo" playsinline webkit-playsinline preload="metadata" controls>
+      <source src="./fastest-lap-tutorial.mp4" type="video/mp4">
+      Your browser does not support HTML video.
+    </video>
+  </div>
 
   <script>
     (function () {
       const startBtn = document.getElementById('startVideoBtn');
       const video    = document.getElementById('tutorialVideo');
-      const waiver   = document.getElementById('waiverSection');
-      const continueWrap = document.getElementById('continueWrap');
-      const continueBtn  = document.getElementById('continueBtn');
-      let revealed = false;
 
-      function revealWaiver() {
-        if (revealed) return;
-        revealed = true;
-        waiver.style.display = 'block';
-        waiver.scrollIntoView({ behavior: 'smooth' });
+      // Redirect to waiver URL
+      function redirectToWaiver() {
+        window.location.href = "https://form.jotform.com/220716898706063";
       }
 
-      // Tap to start
+      // Tap to start video
       startBtn.addEventListener('click', async () => {
         startBtn.style.display = 'none';
         video.style.display = 'block';
-        try { await video.play(); } catch (e) { console.warn(e); }
+        try { await video.play(); } catch (err) { console.warn(err); }
 
-        // Safety valves
-        setTimeout(() => { continueWrap.style.display = 'block'; }, 90_000); // Continue button after 90s
-        setTimeout(revealWaiver, 5 * 60_000); // Auto reveal after 5 mins
+        // Fallback: auto redirect after 5 minutes if video never ends
+        setTimeout(redirectToWaiver, 5 * 60_000);
       });
 
-      // When video ends
-      video.addEventListener('ended', revealWaiver);
-
-      continueBtn.addEventListener('click', revealWaiver);
+      // Redirect immediately when video ends
+      video.addEventListener('ended', redirectToWaiver);
     }());
   </script>
 </body>
 </html>
-
-
