@@ -22,58 +22,129 @@
     }
     body { display:grid; place-items:center; padding: 12px; }
     .wrap { width:min(100vw - 24px, 100vh * (16/9)); max-width:1024px; display:grid; gap:16px; justify-items:center; }
+
     h1 { margin:6px 0; font-size:clamp(18px,3.2vw,28px); text-align:center; }
+
     .btn {
       padding:16px 28px; border-radius:12px;
       background:#e60000; color:#fff;
       font-size:clamp(16px,2.6vw,20px); font-weight:700;
       border:0; cursor:pointer;
     }
-    #tutorialVideo {
-      width:100%; aspect-ratio:16/9;
-      background:#000; display:none;
-    }
+
+    /* Sections */
+    #startSection { display:grid; gap:16px; justify-items:center; }
+    #videoSection { display:none; width:100%; }
+    #waiverSection { display:none; width:100%; max-width:1100px; margin:0 auto; }
+
+    /* Media */
+    #tutorialVideo { width:100%; aspect-ratio:16/9; background:#000; }
+    #waiverFrame { width:100%; height:1800px; border:0; background:#000; }
+
+    /* Optional tiny helper text */
+    .hint { color:#aaa; font-size:13px; text-align:center; }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <h1>Tap to Watch Tutorial, Then Complete Waiver</h1>
+    <h1>Tap to Watch Tutorial, Then Sign Waiver</h1>
 
-    <button id="startVideoBtn" class="btn">🎬 Tap to Start Video</button>
+    <!-- 1) Start -->
+    <section id="startSection" aria-label="Start">
+      <button id="startVideoBtn" class="btn">🎬 Tap to Start Video</button>
+      <div class="hint">Audio starts after you tap.</div>
+    </section>
 
-    <!-- 🔁 Replace filename with your actual MP4 in the repo root -->
-    <video id="tutorialVideo" playsinline webkit-playsinline preload="metadata" controls>
-      <source src="./Sim-Tutorial.mp4" type="video/mp4">
-      Your browser does not support HTML video.
-    </video>
+    <!-- 2) Video -->
+    <section id="videoSection" aria-label="Tutorial Video">
+      <!-- Replace with your actual MP4 filename in the repo root -->
+      <video id="tutorialVideo" playsinline webkit-playsinline preload="metadata" controls>
+        <source src="./Sim-Tutorial.mp4" type="video/mp4">
+        Your browser does not support HTML video.
+      </video>
+      <div class="hint">When the video ends, the waiver will appear below.</div>
+    </section>
+
+    <!-- 3) Waiver (same page) -->
+    <section id="waiverSection" aria-label="Waiver Form">
+      <iframe
+        id="waiverFrame"
+        title="Fastest Lap Waiver"
+        src="https://form.jotform.com/220716898706063"
+        allow="fullscreen">
+      </iframe>
+    </section>
   </div>
 
   <script>
     (function () {
+      const startSection = document.getElementById('startSection');
+      const videoSection = document.getElementById('videoSection');
+      const waiverSection = document.getElementById('waiverSection');
+
       const startBtn = document.getElementById('startVideoBtn');
       const video    = document.getElementById('tutorialVideo');
 
-      // Redirect to waiver URL
-      function redirectToWaiver() {
-        window.location.href = "https://form.jotform.com/220716898706063";
+      // --- State helpers ---
+      function showStart() {
+        startSection.style.display = 'grid';
+        videoSection.style.display = 'none';
+        waiverSection.style.display = 'none';
+        // hard-stop video if it was playing
+        try { video.pause(); video.currentTime = 0; } catch(e) {}
+        // remove ?submitted=1 from URL (keep it clean)
+        if (location.search.includes('submitted=1')) {
+          const url = new URL(location.href);
+          url.searchParams.delete('submitted');
+          history.replaceState(null, '', url.toString());
+        }
+        window.scrollTo({ top: 0, behavior: 'instant' });
       }
 
-      // Tap to start video
-      startBtn.addEventListener('click', async () => {
-        startBtn.style.display = 'none';
-        video.style.display = 'block';
-        try { await video.play(); } catch (err) { console.warn(err); }
+      function showVideo() {
+        startSection.style.display = 'none';
+        videoSection.style.display = 'block';
+        waiverSection.style.display = 'none';
+      }
 
-        // Fallback: auto redirect after 5 minutes if video never ends
-        setTimeout(redirectToWaiver, 5 * 60_000);
+      function showWaiver() {
+        waiverSection.style.display = 'block';
+        waiverSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+
+      // --- On first load: if returning from Jotform (thank-you redirect), reset to Start ---
+      (function initFromQuery() {
+        const params = new URLSearchParams(location.search);
+        if (params.get('submitted') === '1') {
+          showStart();
+          return;
+        }
+        // Default landing: Start state
+        showStart();
+      }());
+
+      // --- Button: start video with sound ---
+      startBtn.addEventListener('click', async () => {
+        showVideo();
+        try { await video.play(); } catch (err) { console.warn('play() blocked:', err); }
       });
 
-      // Redirect immediately when video ends
-      video.addEventListener('ended', redirectToWaiver);
+      // --- When video ends: reveal waiver on the same page ---
+      video.addEventListener('ended', showWaiver);
+
+      // --- Bonus: listen for a postMessage from Jotform (if they ever add one) ---
+      window.addEventListener('message', (evt) => {
+        // If Jotform ever posts a message like "submissionComplete", you could catch it here.
+        if (!evt.origin || evt.origin.indexOf('jotform') === -1) return;
+        try {
+          const data = typeof evt.data === 'string' ? JSON.parse(evt.data) : evt.data;
+          if (data && (data.type === 'submission-completed' || data.event === 'submission-completed')) {
+            // simulate coming back as if we had ?submitted=1
+            showStart();
+          }
+        } catch {}
+      }, false);
     }());
   </script>
 </body>
 </html>
-
-
-
