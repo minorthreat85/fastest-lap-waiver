@@ -7,97 +7,78 @@
   <meta name="theme-color" content="#000000">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <!-- PWA manifest + icons -->
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="apple-touch-icon" sizes="512x512" href="icon-512.png">
+
   <style>
     :root { color-scheme: dark; }
-    * { box-sizing: border-box; }
-    html, body { margin: 0; height: 100%; background: #000; font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, sans-serif; }
+    html, body {
+      margin: 0; height: 100%;
+      background: #000; color: #fff;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, sans-serif;
+    }
     body {
       display: grid;
       grid-template-rows: auto 1fr auto;
       min-height: 100dvh;
       padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
     }
-    header, footer { color:#aaa; text-align:center; font-size:14px; padding:8px 12px; }
+    header, footer { text-align:center; font-size:14px; padding:8px; color:#aaa; }
     main { display: grid; place-items: center; padding: 12px; }
 
     .wrap { width: min(100vw - 24px, 100vh * (16/9)); max-width: 1024px; display: grid; gap: 16px; justify-items: center; }
-    h1 { margin: 6px 0 0; text-align:center; font-weight:600; font-size: clamp(18px, 3.2vw, 28px); color:#fff; }
+    h1 { margin: 6px 0; font-size: clamp(18px, 3.2vw, 28px); text-align:center; }
 
     .btn {
-      appearance: none; border: none; padding: 16px 28px; border-radius: 12px;
-      background: #e60000; color: #fff; font-size: clamp(16px, 2.6vw, 20px); font-weight: 700;
-      cursor: pointer; transition: transform .05s ease; touch-action: manipulation;
+      padding: 16px 28px; border-radius: 12px;
+      background: #e60000; color: #fff;
+      font-size: clamp(16px, 2.6vw, 20px); font-weight: 700;
+      border: none; cursor: pointer;
     }
-    .btn:active { transform: scale(0.98); }
 
-    /* Native video */
     #tutorialVideo {
-      width: 100%;
-      aspect-ratio: 16/9;
-      background: #000;
-      display: none;          /* shown after tap */
-      border: 0;
-    }
-    .helper { color:#bbb; text-align:center; font-size: clamp(12px, 2.2vw, 14px); line-height:1.35; margin: 0; }
-
-    /* Waiver section (hidden until video ends or fallback) */
-    #waiverSection { display:none; width:100%; max-width: 1100px; margin: 0 auto; }
-    #waiverFrame {
-      width: 1px; min-width: 100%;
-      height: 1800px;            /* adjust if your Jotform needs more/less */
-      border: 0; background:#000;
+      width: 100%; aspect-ratio: 16/9;
+      background: #000; display: none;
     }
 
-    /* Optional manual continue appears after 90s */
-    #continueWrap { display:none; }
-    #continueNote { color:#aaa; font-size:13px; text-align:center; margin-top:6px; }
+    #waiverSection { display:none; width:100%; max-width:1100px; margin:0 auto; }
+    #waiverFrame { width:100%; height:1800px; border:0; background:#000; }
+
+    #continueWrap { display:none; text-align:center; }
+    #continueBtn { background:#444; }
+    #continueNote { color:#aaa; font-size:13px; margin-top:6px; }
   </style>
 </head>
 <body>
-  <header aria-hidden="true"></header>
+  <header></header>
 
   <main>
-    <section class="wrap" id="videoSection" aria-label="Tutorial Video">
+    <section class="wrap" id="videoSection">
       <h1>Tap to Watch Tutorial, Then Sign Waiver</h1>
 
       <button id="startVideoBtn" class="btn">🎬 Tap to Start Video</button>
 
-      <!-- Replace the src with your hosted MP4 (e.g., ./fastest-lap-tutorial.mp4) -->
-      <video
-        id="tutorialVideo"
-        playsinline
-        preload="metadata"
-        controls
-        crossorigin="anonymous">
-        <source src="VIDEO_URL_HERE.mp4" type="video/mp4">
-        <!-- Fallback text -->
+      <!-- Replace with your actual MP4 file path -->
+      <video id="tutorialVideo" playsinline preload="metadata" controls>
+        <source src="./fastest-lap-tutorial.mp4" type="video/mp4">
         Your browser does not support HTML video.
       </video>
 
-      <p class="helper">Audio starts after you tap. Please watch the tutorial before signing the waiver.</p>
-
-      <!-- Optional manual continue -->
       <div id="continueWrap">
-        <button id="continueBtn" class="btn" style="background:#444;">Continue to Waiver</button>
-        <div id="continueNote">If the waiver doesn’t appear automatically when the video ends, tap here.</div>
+        <button id="continueBtn" class="btn">Continue to Waiver</button>
+        <div id="continueNote">If the waiver doesn’t appear automatically, tap here.</div>
       </div>
     </section>
 
-    <!-- Waiver -->
-    <section id="waiverSection" aria-label="Waiver Form">
-      <iframe
-        id="waiverFrame"
-        title="Fastest Lap Waiver"
-        src="https://form.jotform.com/220716898706063"
-        allow="fullscreen">
-      </iframe>
+    <section id="waiverSection">
+      <iframe id="waiverFrame" src="https://form.jotform.com/220716898706063"></iframe>
     </section>
   </main>
 
-  <footer aria-hidden="true"></footer>
+  <footer></footer>
 
   <script>
     (function () {
@@ -106,39 +87,30 @@
       const waiver   = document.getElementById('waiverSection');
       const continueWrap = document.getElementById('continueWrap');
       const continueBtn  = document.getElementById('continueBtn');
-
       let revealed = false;
 
       function revealWaiver() {
         if (revealed) return;
         revealed = true;
         waiver.style.display = 'block';
-        waiver.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        waiver.scrollIntoView({ behavior: 'smooth' });
       }
 
-      // First user gesture: show video and play with sound
+      // Tap to start
       startBtn.addEventListener('click', async () => {
         startBtn.style.display = 'none';
         video.style.display = 'block';
+        try { await video.play(); } catch (e) { console.warn(e); }
 
-        try {
-          // iOS allows play() here because it's in direct response to a user gesture.
-          await video.play();
-        } catch (err) {
-          // If something blocks autoplay, show a note and keep controls visible
-          console.warn('play() was blocked:', err);
-        }
-
-        // Safety valves:
-        setTimeout(() => { continueWrap.style.display = 'grid'; }, 90_000);      // manual continue after 90s
-        setTimeout(revealWaiver, 5 * 60_000);                                     // fallback reveal after 5 min
+        // Safety valves
+        setTimeout(() => { continueWrap.style.display = 'block'; }, 90_000); // Continue button after 90s
+        setTimeout(revealWaiver, 5 * 60_000); // Auto reveal after 5 mins
       });
 
-      // Reveal waiver when video actually ends
+      // When video ends
       video.addEventListener('ended', revealWaiver);
 
-      // Manual continue button
-      if (continueBtn) continueBtn.addEventListener('click', revealWaiver);
+      continueBtn.addEventListener('click', revealWaiver);
     }());
   </script>
 </body>
