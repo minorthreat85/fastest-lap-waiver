@@ -4,113 +4,164 @@
   <meta charset="utf-8" />
   <title>Fastest Lap Waiver + Tutorial</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#000000">
 
-  <!-- iOS: open without Safari UI when launched from Home Screen -->
+  <!-- iOS fullscreen when launched from Home Screen -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-  <!-- PWA manifest -->
+  <!-- PWA manifest + icons (keep these files in repo root) -->
   <link rel="manifest" href="manifest.webmanifest">
-
-  <!-- iOS home screen icon (optional; replace with your PNGs) -->
   <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="apple-touch-icon" sizes="512x512" href="icon-512.png">
 
   <style>
     :root { color-scheme: dark; }
     * { box-sizing: border-box; }
-    html, body {
-      margin: 0;
-      height: 100%;
-      background: #000;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, sans-serif;
-    }
-    /* Fullscreen layout (no scroll) */
+    html, body { margin: 0; height: 100%; background: #000; font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, sans-serif; }
     body {
       display: grid;
-      place-items: center;
-      padding: env(safe-area-inset-top) env(safe-area-inset-right)
-               env(safe-area-inset-bottom) env(safe-area-inset-left);
-      overflow: hidden;
+      grid-template-rows: auto 1fr auto;
+      min-height: 100dvh;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
     }
-    .wrap {
-      width: min(100vw - 24px, 100vh * (16/9));
-      /* keep 16:9 while fitting viewport; small padding for safe areas */
-      max-height: calc(100vh - 24px);
-      display: grid;
-      gap: 16px;
-      justify-items: center;
-    }
-    h1 {
-      margin: 0;
-      text-align: center;
-      font-weight: 600;
-      font-size: clamp(18px, 3.2vw, 28px);
-      color: #fff;
-    }
+    header, footer { color:#aaa; text-align:center; font-size:14px; padding:8px 12px; }
+    main { display: grid; place-items: center; padding: 12px; }
+
+    .wrap { width: min(100vw - 24px, 100vh * (16/9)); max-width: 1024px; display: grid; gap: 16px; justify-items: center; }
+    h1 { margin: 6px 0 0; text-align:center; font-weight:600; font-size: clamp(18px, 3.2vw, 28px); color:#fff; }
+
     .btn {
-      appearance: none;
-      border: none;
-      padding: 16px 28px;
-      border-radius: 12px;
-      background: #e60000;
-      color: #fff;
-      font-size: clamp(16px, 2.6vw, 20px);
-      font-weight: 700;
-      cursor: pointer;
-      transition: transform .05s ease;
-      touch-action: manipulation;
+      appearance: none; border: none; padding: 16px 28px; border-radius: 12px;
+      background: #e60000; color: #fff; font-size: clamp(16px, 2.6vw, 20px); font-weight: 700;
+      cursor: pointer; transition: transform .05s ease; touch-action: manipulation;
     }
     .btn:active { transform: scale(0.98); }
-    .player {
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      border: 0;
-      display: none; /* hidden until tapped */
-      background: #000;
+
+    .player { width: 100%; aspect-ratio: 16 / 9; border: 0; background: #000; display: none; }
+
+    .helper {
+      color:#bbb; text-align:center; font-size: clamp(12px, 2.2vw, 14px); line-height:1.35; margin: 0;
     }
-    .legal {
-      max-width: 80ch;
-      color: #bbb;
-      text-align: center;
-      font-size: clamp(12px, 2.2vw, 14px);
-      line-height: 1.35;
+
+    /* Waiver section (hidden until video ends or fallback timer) */
+    #waiverSection { display:none; width:100%; max-width: 1100px; margin: 0 auto; }
+    #waiverFrame {
+      width: 1px; min-width: 100%;
+      height: 1800px; /* big enough for the form; adjust if needed */
+      border: 0; background:#000;
     }
+
+    /* Optional “Continue” appears after a short delay as a manual unlock */
+    #continueWrap { display:none; }
+    #continueNote { color:#aaa; font-size:13px; text-align:center; margin-top:6px; }
   </style>
 </head>
 <body>
-  <main class="wrap" role="main" aria-label="Fastest Lap Waiver + Tutorial">
-    <h1>Tap to Watch Tutorial, Then Sign Waiver</h1>
+  <header aria-hidden="true"></header>
 
-    <button id="startVideoBtn" class="btn">🎬 Tap to Start Video</button>
+  <main>
+    <section class="wrap" id="videoSection" aria-label="Tutorial Video">
+      <h1>Tap to Watch Tutorial, Then Sign Waiver</h1>
 
-    <!-- We defer-load the video so the tap counts as a user gesture (audio allowed) -->
-    <iframe
-      id="viddlerVideo"
-      class="player"
-      title="Sim Racing Seat &amp; Pedal Adjustment"
-      src="about:blank"
-      data-src="https://www.viddler.com/embed/player?id=4370&playbackId=00pYbi17DG5Jv5xv8Kkc9wQJOZ9SDWKNysIR5ofRXXxY&color=dark&autoplay=1"
-      allow="autoplay; fullscreen"
-      allowfullscreen
-      playsinline
-      referrerpolicy="no-referrer">
-    </iframe>
+      <button id="startVideoBtn" class="btn">🎬 Tap to Start Video</button>
 
-    <p class="legal">Audio starts after you tap. For the safest experience, watch the tutorial before signing the waiver.</p>
+      <iframe
+        id="viddlerVideo"
+        class="player"
+        title="Sim Racing Seat &amp; Pedal Adjustment"
+        src="about:blank"
+        data-src="https://www.viddler.com/embed/player?id=4370&playbackId=00pYbi17DG5Jv5xv8Kkc9wQJOZ9SDWKNysIR5ofRXXxY&color=dark&autoplay=1"
+        allow="autoplay; fullscreen"
+        allowfullscreen
+        playsinline
+        referrerpolicy="no-referrer">
+      </iframe>
+
+      <p class="helper">Audio starts after you tap. Please watch the tutorial before signing the waiver.</p>
+
+      <!-- Optional manual continue (appears after 90s) -->
+      <div id="continueWrap">
+        <button id="continueBtn" class="btn" style="background:#444;">Continue to Waiver</button>
+        <div id="continueNote">If the waiver doesn’t appear automatically when the video ends, tap here.</div>
+      </div>
+    </section>
+
+    <!-- Waiver (hidden until revealed) -->
+    <section id="waiverSection" aria-label="Waiver Form">
+      <iframe
+        id="waiverFrame"
+        title="Fastest Lap Waiver"
+        src="https://form.jotform.com/220716898706063"
+        allow="fullscreen">
+      </iframe>
+    </section>
   </main>
 
+  <footer aria-hidden="true"></footer>
+
   <script>
-    // Tap-to-start: loads the real video URL on user gesture so audio is allowed on iOS
     (function () {
-      const btn = document.getElementById('startVideoBtn');
-      const iframe = document.getElementById('viddlerVideo');
-      btn.addEventListener('click', () => {
-        if (iframe.dataset.src && iframe.src.indexOf('about:blank') === 0) {
-          iframe.src = iframe.dataset.src + '&_=' + Date.now(); // cache-bust
+      const startBtn = document.getElementById('startVideoBtn');
+      const video = document.getElementById('viddlerVideo');
+      const videoSection = document.getElementById('videoSection');
+      const waiverSection = document.getElementById('waiverSection');
+      const continueWrap = document.getElementById('continueWrap');
+      const continueBtn  = document.getElementById('continueBtn');
+
+      let revealed = false;
+
+      function revealWaiver() {
+        if (revealed) return;
+        revealed = true;
+        waiverSection.style.display = 'block';
+        // keep the video visible (or hide if you prefer):
+        // videoSection.style.display = 'none';
+        waiverSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+
+      // 1) Tap-to-start loads the real video URL so audio is allowed on iOS
+      startBtn.addEventListener('click', () => {
+        if (video.dataset.src && video.src.indexOf('about:blank') === 0) {
+          video.src = video.dataset.src + '&_=' + Date.now(); // cache-bust
         }
-        iframe.style.display = 'block';
-        btn.style.display = 'none';
+        video.style.display = 'block';
+        startBtn.style.display = 'none';
+
+        // 2) Show a manual "Continue to Waiver" after 90s (safety valve)
+        setTimeout(() => { continueWrap.style.display = 'grid'; }, 90_000);
+
+        // 3) Fallback: auto-reveal waiver after 5 minutes if no end event arrives
+        setTimeout(revealWaiver, 5 * 60_000);
       });
+
+      // Manual continue button
+      if (continueBtn) continueBtn.addEventListener('click', revealWaiver);
+
+      // 4) Try to detect the video "ended" via postMessage from the player (best effort)
+      //    If Viddler posts a message on end, catch it and reveal the waiver immediately.
+      window.addEventListener('message', (evt) => {
+        // Only trust viddler origin
+        if (!evt.origin || evt.origin.indexOf('viddler.com') === -1) return;
+
+        try {
+          // Some players post plain strings, some post JSON
+          const data = typeof evt.data === 'string' ? JSON.parse(evt.data) : evt.data;
+
+          // Heuristics: look for a type/name that indicates "ended"
+          if (
+            (data && (data.event === 'ended' || data.type === 'ended' || data.state === 'ended')) ||
+            (typeof evt.data === 'string' && evt.data.toLowerCase().includes('ended'))
+          ) {
+            revealWaiver();
+          }
+        } catch (e) {
+          // If parsing fails but the raw string contains "ended", still reveal.
+          if (typeof evt.data === 'string' && evt.data.toLowerCase().includes('ended')) {
+            revealWaiver();
+          }
+        }
+      }, false);
     }());
   </script>
 </body>
