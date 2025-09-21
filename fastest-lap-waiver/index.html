@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Fastest Lap Waiver + Tutorial</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+  <!-- iOS: open without Safari UI when launched from Home Screen -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <!-- PWA manifest -->
+  <link rel="manifest" href="manifest.webmanifest">
+
+  <!-- iOS home screen icon (optional; replace with your PNGs) -->
+  <link rel="apple-touch-icon" href="icon-192.png">
+
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: #000;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, sans-serif;
+    }
+    /* Fullscreen layout (no scroll) */
+    body {
+      display: grid;
+      place-items: center;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right)
+               env(safe-area-inset-bottom) env(safe-area-inset-left);
+      overflow: hidden;
+    }
+    .wrap {
+      width: min(100vw - 24px, 100vh * (16/9));
+      /* keep 16:9 while fitting viewport; small padding for safe areas */
+      max-height: calc(100vh - 24px);
+      display: grid;
+      gap: 16px;
+      justify-items: center;
+    }
+    h1 {
+      margin: 0;
+      text-align: center;
+      font-weight: 600;
+      font-size: clamp(18px, 3.2vw, 28px);
+      color: #fff;
+    }
+    .btn {
+      appearance: none;
+      border: none;
+      padding: 16px 28px;
+      border-radius: 12px;
+      background: #e60000;
+      color: #fff;
+      font-size: clamp(16px, 2.6vw, 20px);
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .05s ease;
+      touch-action: manipulation;
+    }
+    .btn:active { transform: scale(0.98); }
+    .player {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      border: 0;
+      display: none; /* hidden until tapped */
+      background: #000;
+    }
+    .legal {
+      max-width: 80ch;
+      color: #bbb;
+      text-align: center;
+      font-size: clamp(12px, 2.2vw, 14px);
+      line-height: 1.35;
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap" role="main" aria-label="Fastest Lap Waiver + Tutorial">
+    <h1>Tap to Watch Tutorial, Then Sign Waiver</h1>
+
+    <button id="startVideoBtn" class="btn">🎬 Tap to Start Video</button>
+
+    <!-- We defer-load the video so the tap counts as a user gesture (audio allowed) -->
+    <iframe
+      id="viddlerVideo"
+      class="player"
+      title="Sim Racing Seat &amp; Pedal Adjustment"
+      src="about:blank"
+      data-src="https://www.viddler.com/embed/player?id=4370&playbackId=00pYbi17DG5Jv5xv8Kkc9wQJOZ9SDWKNysIR5ofRXXxY&color=dark&autoplay=1"
+      allow="autoplay; fullscreen"
+      allowfullscreen
+      playsinline
+      referrerpolicy="no-referrer">
+    </iframe>
+
+    <p class="legal">Audio starts after you tap. For the safest experience, watch the tutorial before signing the waiver.</p>
+  </main>
+
+  <script>
+    // Tap-to-start: loads the real video URL on user gesture so audio is allowed on iOS
+    (function () {
+      const btn = document.getElementById('startVideoBtn');
+      const iframe = document.getElementById('viddlerVideo');
+      btn.addEventListener('click', () => {
+        if (iframe.dataset.src && iframe.src.indexOf('about:blank') === 0) {
+          iframe.src = iframe.dataset.src + '&_=' + Date.now(); // cache-bust
+        }
+        iframe.style.display = 'block';
+        btn.style.display = 'none';
+      });
+    }());
+  </script>
+</body>
+</html>
