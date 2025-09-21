@@ -5,16 +5,11 @@
   <title>Fastest Lap Waiver + Tutorial</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#000000">
-
-  <!-- iOS fullscreen when launched from Home Screen -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
-  <!-- PWA manifest + icons (keep these files in repo root) -->
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="apple-touch-icon" sizes="512x512" href="icon-512.png">
-
   <style>
     :root { color-scheme: dark; }
     * { box-sizing: border-box; }
@@ -38,21 +33,25 @@
     }
     .btn:active { transform: scale(0.98); }
 
-    .player { width: 100%; aspect-ratio: 16 / 9; border: 0; background: #000; display: none; }
-
-    .helper {
-      color:#bbb; text-align:center; font-size: clamp(12px, 2.2vw, 14px); line-height:1.35; margin: 0;
+    /* Native video */
+    #tutorialVideo {
+      width: 100%;
+      aspect-ratio: 16/9;
+      background: #000;
+      display: none;          /* shown after tap */
+      border: 0;
     }
+    .helper { color:#bbb; text-align:center; font-size: clamp(12px, 2.2vw, 14px); line-height:1.35; margin: 0; }
 
-    /* Waiver section (hidden until video ends or fallback timer) */
+    /* Waiver section (hidden until video ends or fallback) */
     #waiverSection { display:none; width:100%; max-width: 1100px; margin: 0 auto; }
     #waiverFrame {
       width: 1px; min-width: 100%;
-      height: 1800px; /* big enough for the form; adjust if needed */
+      height: 1800px;            /* adjust if your Jotform needs more/less */
       border: 0; background:#000;
     }
 
-    /* Optional “Continue” appears after a short delay as a manual unlock */
+    /* Optional manual continue appears after 90s */
     #continueWrap { display:none; }
     #continueNote { color:#aaa; font-size:13px; text-align:center; margin-top:6px; }
   </style>
@@ -66,28 +65,28 @@
 
       <button id="startVideoBtn" class="btn">🎬 Tap to Start Video</button>
 
-      <iframe
-        id="viddlerVideo"
-        class="player"
-        title="Sim Racing Seat &amp; Pedal Adjustment"
-        src="about:blank"
-        data-src="https://www.viddler.com/embed/player?id=4370&playbackId=00pYbi17DG5Jv5xv8Kkc9wQJOZ9SDWKNysIR5ofRXXxY&color=dark&autoplay=1"
-        allow="autoplay; fullscreen"
-        allowfullscreen
+      <!-- Replace the src with your hosted MP4 (e.g., ./fastest-lap-tutorial.mp4) -->
+      <video
+        id="tutorialVideo"
         playsinline
-        referrerpolicy="no-referrer">
-      </iframe>
+        preload="metadata"
+        controls
+        crossorigin="anonymous">
+        <source src="VIDEO_URL_HERE.mp4" type="video/mp4">
+        <!-- Fallback text -->
+        Your browser does not support HTML video.
+      </video>
 
       <p class="helper">Audio starts after you tap. Please watch the tutorial before signing the waiver.</p>
 
-      <!-- Optional manual continue (appears after 90s) -->
+      <!-- Optional manual continue -->
       <div id="continueWrap">
         <button id="continueBtn" class="btn" style="background:#444;">Continue to Waiver</button>
         <div id="continueNote">If the waiver doesn’t appear automatically when the video ends, tap here.</div>
       </div>
     </section>
 
-    <!-- Waiver (hidden until revealed) -->
+    <!-- Waiver -->
     <section id="waiverSection" aria-label="Waiver Form">
       <iframe
         id="waiverFrame"
@@ -103,9 +102,8 @@
   <script>
     (function () {
       const startBtn = document.getElementById('startVideoBtn');
-      const video = document.getElementById('viddlerVideo');
-      const videoSection = document.getElementById('videoSection');
-      const waiverSection = document.getElementById('waiverSection');
+      const video    = document.getElementById('tutorialVideo');
+      const waiver   = document.getElementById('waiverSection');
       const continueWrap = document.getElementById('continueWrap');
       const continueBtn  = document.getElementById('continueBtn');
 
@@ -114,56 +112,34 @@
       function revealWaiver() {
         if (revealed) return;
         revealed = true;
-        waiverSection.style.display = 'block';
-        // keep the video visible (or hide if you prefer):
-        // videoSection.style.display = 'hide';
-        waiverSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        waiver.style.display = 'block';
+        waiver.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
 
-      // 1) Tap-to-start loads the real video URL so audio is allowed on iOS
-      startBtn.addEventListener('click', () => {
-        if (video.dataset.src && video.src.indexOf('about:blank') === 0) {
-          video.src = video.dataset.src + '&_=' + Date.now(); // cache-bust
-        }
-        video.style.display = 'block';
+      // First user gesture: show video and play with sound
+      startBtn.addEventListener('click', async () => {
         startBtn.style.display = 'none';
+        video.style.display = 'block';
 
-        // 2) Show a manual "Continue to Waiver" after 90s (safety valve)
-        setTimeout(() => { continueWrap.style.display = 'grid'; }, 90_000);
+        try {
+          // iOS allows play() here because it's in direct response to a user gesture.
+          await video.play();
+        } catch (err) {
+          // If something blocks autoplay, show a note and keep controls visible
+          console.warn('play() was blocked:', err);
+        }
 
-        // 3) Fallback: auto-reveal waiver after 5 minutes if no end event arrives
-        setTimeout(revealWaiver, 5 * 60_000);
+        // Safety valves:
+        setTimeout(() => { continueWrap.style.display = 'grid'; }, 90_000);      // manual continue after 90s
+        setTimeout(revealWaiver, 5 * 60_000);                                     // fallback reveal after 5 min
       });
+
+      // Reveal waiver when video actually ends
+      video.addEventListener('ended', revealWaiver);
 
       // Manual continue button
       if (continueBtn) continueBtn.addEventListener('click', revealWaiver);
-
-      // 4) Try to detect the video "ended" via postMessage from the player (best effort)
-      //    If Viddler posts a message on end, catch it and reveal the waiver immediately.
-      window.addEventListener('message', (evt) => {
-        // Only trust viddler origin
-        if (!evt.origin || evt.origin.indexOf('viddler.com') === -1) return;
-
-        try {
-          // Some players post plain strings, some post JSON
-          const data = typeof evt.data === 'string' ? JSON.parse(evt.data) : evt.data;
-
-          // Heuristics: look for a type/name that indicates "ended"
-          if (
-            (data && (data.event === 'ended' || data.type === 'ended' || data.state === 'ended')) ||
-            (typeof evt.data === 'string' && evt.data.toLowerCase().includes('ended'))
-          ) {
-            revealWaiver();
-          }
-        } catch (e) {
-          // If parsing fails but the raw string contains "ended", still reveal.
-          if (typeof evt.data === 'string' && evt.data.toLowerCase().includes('ended')) {
-            revealWaiver();
-          }
-        }
-      }, false);
     }());
   </script>
 </body>
 </html>
-
