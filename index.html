@@ -9,6 +9,13 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
 
+  <!-- Force HTTPS (helps before GitHub's Enforce HTTPS is active) -->
+  <script>
+    if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+      location.replace('https://' + location.host + location.pathname + location.search + location.hash);
+    }
+  </script>
+
   <!-- PWA manifest + icons -->
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="icon-192.png">
@@ -91,9 +98,7 @@
         startSection.style.display = 'grid';
         videoSection.style.display = 'none';
         waiverSection.style.display = 'none';
-        // hard-stop video if it was playing
         try { video.pause(); video.currentTime = 0; } catch(e) {}
-        // remove ?submitted=1 from URL (keep it clean)
         if (location.search.includes('submitted=1')) {
           const url = new URL(location.href);
           url.searchParams.delete('submitted');
@@ -113,34 +118,28 @@
         waiverSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
 
-      // --- On first load: if returning from Jotform (thank-you redirect), reset to Start ---
+      // Init: if returning from Jotform (?submitted=1), reset to Start
       (function initFromQuery() {
         const params = new URLSearchParams(location.search);
-        if (params.get('submitted') === '1') {
-          showStart();
-          return;
-        }
-        // Default landing: Start state
+        if (params.get('submitted') === '1') { showStart(); return; }
         showStart();
       }());
 
-      // --- Button: start video with sound ---
+      // Start video with user gesture (unlocks audio)
       startBtn.addEventListener('click', async () => {
         showVideo();
         try { await video.play(); } catch (err) { console.warn('play() blocked:', err); }
       });
 
-      // --- When video ends: reveal waiver on the same page ---
+      // On video end, reveal waiver on same page
       video.addEventListener('ended', showWaiver);
 
-      // --- Bonus: listen for a postMessage from Jotform (if they ever add one) ---
+      // Future-proof: handle potential Jotform postMessage
       window.addEventListener('message', (evt) => {
-        // If Jotform ever posts a message like "submissionComplete", you could catch it here.
         if (!evt.origin || evt.origin.indexOf('jotform') === -1) return;
         try {
           const data = typeof evt.data === 'string' ? JSON.parse(evt.data) : evt.data;
           if (data && (data.type === 'submission-completed' || data.event === 'submission-completed')) {
-            // simulate coming back as if we had ?submitted=1
             showStart();
           }
         } catch {}
@@ -149,4 +148,3 @@
   </script>
 </body>
 </html>
-
