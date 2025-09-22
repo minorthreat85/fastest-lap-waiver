@@ -9,17 +9,11 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
 
-  <!-- Force HTTPS (optional safeguard) -->
+  <!-- Force HTTPS (helps before GitHub's Enforce HTTPS is active) -->
   <script>
     if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
       location.replace('https://' + location.host + location.pathname + location.search + location.hash);
     }
-    // 🔒 Prevent browsers (esp. iOS) from restoring previous scroll
-    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
-    // Handle BFCache restores on iOS
-    window.addEventListener('pageshow', function (e) {
-      if (e.persisted) window.scrollTo(0, 0);
-    });
   </script>
 
   <!-- PWA manifest + icons -->
@@ -55,13 +49,11 @@
     #tutorialVideo { width:100%; aspect-ratio:16/9; background:#000; }
     #waiverFrame { width:100%; height:1800px; border:0; background:#000; }
 
+    /* Optional tiny helper text */
     .hint { color:#aaa; font-size:13px; text-align:center; }
   </style>
 </head>
 <body>
-  <!-- 📍 Absolute top anchor -->
-  <div id="top" style="position:absolute; top:0; left:0; width:0; height:0;"></div>
-
   <div class="wrap">
     <h1>Tap to Watch Tutorial, Then Sign Waiver</h1>
 
@@ -73,6 +65,7 @@
 
     <!-- 2) Video -->
     <section id="videoSection" aria-label="Tutorial Video">
+      <!-- Replace with your actual MP4 filename in the repo root -->
       <video id="tutorialVideo" playsinline webkit-playsinline preload="metadata" controls>
         <source src="./Sim-Tutorial.mp4" type="video/mp4">
         Your browser does not support HTML video.
@@ -96,14 +89,22 @@
       const startSection = document.getElementById('startSection');
       const videoSection = document.getElementById('videoSection');
       const waiverSection = document.getElementById('waiverSection');
-      const startBtn = document.getElementById('startVideoBtn');
-      const video = document.getElementById('tutorialVideo');
 
+      const startBtn = document.getElementById('startVideoBtn');
+      const video    = document.getElementById('tutorialVideo');
+
+      // --- State helpers ---
       function showStart() {
         startSection.style.display = 'grid';
         videoSection.style.display = 'none';
         waiverSection.style.display = 'none';
         try { video.pause(); video.currentTime = 0; } catch(e) {}
+        if (location.search.includes('submitted=1')) {
+          const url = new URL(location.href);
+          url.searchParams.delete('submitted');
+          history.replaceState(null, '', url.toString());
+        }
+        window.scrollTo({ top: 0, behavior: 'instant' });
       }
 
       function showVideo() {
@@ -117,31 +118,10 @@
         waiverSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
 
-      // ✅ Hard reset scroll to absolute top (handles iOS quirks)
-      function resetScroll() {
-        // First, set the hash to #top (anchor jump)
-        if (location.hash !== '#top') location.hash = '#top';
-        // Then force scroll to (0,0) twice around frame boundaries
-        window.scrollTo(0, 0);
-        requestAnimationFrame(() => {
-          window.scrollTo(0, 0);
-          const anchor = document.getElementById('startSection') || document.getElementById('top');
-          if (anchor) anchor.scrollIntoView({ behavior: 'auto', block: 'start' });
-        });
-      }
-
-      // Init: if returning from Jotform (?submitted=1), reset to Start and top
+      // Init: if returning from Jotform (?submitted=1), reset to Start
       (function initFromQuery() {
         const params = new URLSearchParams(location.search);
-        if (params.get('submitted') === '1') {
-          showStart();
-          resetScroll();
-          // Clean query for future reloads
-          const url = new URL(location.href);
-          url.searchParams.delete('submitted');
-          history.replaceState(null, '', url.toString());
-          return;
-        }
+        if (params.get('submitted') === '1') { showStart(); return; }
         showStart();
       }());
 
@@ -151,9 +131,21 @@
         try { await video.play(); } catch (err) { console.warn('play() blocked:', err); }
       });
 
-      // When video ends: reveal waiver on same page
+      // On video end, reveal waiver on same page
       video.addEventListener('ended', showWaiver);
+
+      // Future-proof: handle potential Jotform postMessage
+      window.addEventListener('message', (evt) => {
+        if (!evt.origin || evt.origin.indexOf('jotform') === -1) return;
+        try {
+          const data = typeof evt.data === 'string' ? JSON.parse(evt.data) : evt.data;
+          if (data && (data.type === 'submission-completed' || data.event === 'submission-completed')) {
+            showStart();
+          }
+        } catch {}
+      }, false);
     }());
   </script>
 </body>
 </html>
+
