@@ -6,10 +6,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#000000">
 
-  <!-- IMPORTANT: no manifest link here so iOS doesn't treat this as the same PWA -->
-  <!-- NO: <link rel="manifest" href="manifest.webmanifest"> -->
+  <!-- ✅ Make this page run as a full-screen web app when launched from Home Screen -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-  <!-- You can still keep the Apple touch icons so the icon looks nice -->
+  <!-- ❌ DO NOT include the manifest here so it doesn't get forced back to "/" -->
+  <!-- no: <link rel="manifest" href="manifest.webmanifest"> -->
+
+  <!-- Optional: still use your icons so the Home Screen icon looks good -->
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="apple-touch-icon" sizes="512x512" href="icon-512.png">
 
