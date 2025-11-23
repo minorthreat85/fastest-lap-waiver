@@ -5,17 +5,16 @@
   <title>Fastest Lap Waiver</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#000000">
-
-  <!-- ✅ Make this page run as a full-screen web app when launched from Home Screen -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
 
-  <!-- ❌ DO NOT include the manifest here so it doesn't get forced back to "/" -->
-  <!-- no: <link rel="manifest" href="manifest.webmanifest"> -->
-
-  <!-- Optional: still use your icons so the Home Screen icon looks good -->
-  <link rel="apple-touch-icon" href="icon-192.png">
-  <link rel="apple-touch-icon" sizes="512x512" href="icon-512.png">
+  <!-- Force HTTPS -->
+  <script>
+    if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+      location.replace('https://' + location.host + location.pathname + location.search + location.hash);
+    }
+  </script>
 
   <style>
     :root { color-scheme: dark; }
@@ -25,12 +24,29 @@
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, sans-serif;
     }
     body { display:grid; place-items:center; padding: 12px; }
-    .wrap { width:min(100vw - 24px, 100vh * (16/9)); max-width:1024px; display:grid; gap:16px; justify-items:center; }
-
-    h1 { margin:6px 0; font-size:clamp(18px,3.2vw,28px); text-align:center; }
-
-    #waiverSection { width:100%; max-width:1100px; margin:0 auto; }
-    #waiverFrame { width:100%; height:1800px; border:0; background:#000; }
+    .wrap {
+      width:min(100vw - 24px, 100vh * (16/9));
+      max-width:1024px;
+      display:grid;
+      gap:16px;
+      justify-items:center;
+    }
+    h1 {
+      margin:6px 0;
+      font-size:clamp(18px,3.2vw,28px);
+      text-align:center;
+    }
+    #waiverSection {
+      width:100%;
+      max-width:1100px;
+      margin:0 auto;
+    }
+    #waiverFrame {
+      width:100%;
+      height:1800px;
+      border:0;
+      background:#000;
+    }
   </style>
 </head>
 <body>
