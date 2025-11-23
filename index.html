@@ -86,8 +86,31 @@
 
   <script>
     (function () {
-      const params   = new URLSearchParams(location.search);
-      const noVideo  = (params.get('novideo') === '1' || params.get('novideo') === 'true');
+      const params = new URLSearchParams(location.search);
+
+      // --- Persist "noVideo" mode using localStorage ---
+      let noVideo = (params.get('novideo') === '1' || params.get('novideo') === 'true');
+
+      try {
+        const stored = localStorage.getItem('fl_noVideo');
+
+        // If URL says novideo=0 or novideo=false → turn OFF no-video mode and clear storage
+        if (params.get('novideo') === '0' || params.get('novideo') === 'false') {
+          noVideo = false;
+          localStorage.removeItem('fl_noVideo');
+        } else {
+          // If we've ever enabled no-video before, keep it on
+          if (stored === '1') {
+            noVideo = true;
+          }
+          // If URL currently has novideo=1/true, save it for future loads
+          if (noVideo && stored !== '1') {
+            localStorage.setItem('fl_noVideo', '1');
+          }
+        }
+      } catch (e) {
+        // If localStorage is unavailable, just fall back to URL param behavior
+      }
 
       const startSection  = document.getElementById('startSection');
       const videoSection  = document.getElementById('videoSection');
@@ -135,7 +158,7 @@
 
       // Init: if returning from Jotform (?submitted=1), reset to Start
       (function initFromQuery() {
-        // If novideo is set, skip straight to waiver
+        // If novideo is set or stored, skip straight to waiver
         if (noVideo) {
           showStart();  // showStart handles noVideo path
           return;
