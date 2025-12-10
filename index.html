@@ -9,17 +9,12 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
 
-  <!-- Force HTTPS (helps before hosting's Enforce HTTPS is active) -->
+  <!-- Force HTTPS -->
   <script>
     if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
       location.replace('https://' + location.host + location.pathname + location.search + location.hash);
     }
   </script>
-
-  <!-- PWA manifest + icons -->
-  <link rel="manifest" href="manifest.webmanifest">
-  <link rel="apple-touch-icon" href="icon-192.png">
-  <link rel="apple-touch-icon" sizes="512x512" href="icon-512.png">
 
   <style>
     :root { color-scheme: dark; }
@@ -28,7 +23,8 @@
       background:#000; color:#fff;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, sans-serif;
     }
-    body { display:grid; place-items:center; padding: 12px; }
+    body { display:grid; place-items:center; padding:12px; }
+
     .wrap {
       width:min(100vw - 24px, 100vh * (16/9));
       max-width:1024px;
@@ -62,8 +58,8 @@
     }
 
     /* Sections */
-    #startSection { display:grid; gap:16px; justify-items:center; }
-    #videoSection { display:none; width:100%; }
+    #startSection  { display:grid; gap:16px; justify-items:center; }
+    #videoSection  { display:none; width:100%; }
     #waiverSection { display:none; width:100%; max-width:1100px; margin:0 auto; }
 
     /* Media */
@@ -84,6 +80,13 @@
       margin:16px 0 0;
       flex-wrap:wrap;
     }
+
+    .waiver-actions-note {
+      font-size:13px;
+      color:#aaa;
+      text-align:center;
+      margin-top:4px;
+    }
   </style>
 </head>
 <body>
@@ -99,7 +102,7 @@
     <!-- 2) Video -->
     <section id="videoSection" aria-label="Tutorial Video">
       <video id="tutorialVideo" playsinline webkit-playsinline preload="metadata" controls>
-        <!-- Replace with your real MP4 file name / path -->
+        <!-- Replace with your real MP4 path if needed -->
         <source src="./Waiver-Tutorial.mp4" type="video/mp4">
         Your browser does not support HTML video.
       </video>
@@ -115,8 +118,8 @@
         allow="fullscreen">
       </iframe>
 
-      <!-- These appear AFTER Jotform submission -->
-      <div id="postSubmitActions" class="waiver-actions" style="display:none;">
+      <!-- Always visible: used AFTER they hit Submit inside the form -->
+      <div class="waiver-actions">
         <button id="submitAgainBtn" class="btn">
           📝 Submit &amp; Fill Out Waiver Again
         </button>
@@ -124,76 +127,40 @@
           🎬 Submit &amp; Watch Video Again
         </button>
       </div>
+      <div class="waiver-actions-note">
+        Tap one of these <strong>after</strong> you press Submit above.
+      </div>
     </section>
   </div>
 
   <script>
     (function () {
-      const params = new URLSearchParams(location.search);
+      // Elements
+      const startSection  = document.getElementById('startSection');
+      const videoSection  = document.getElementById('videoSection');
+      const waiverSection = document.getElementById('waiverSection');
 
-      // Optional: ?novideo=1 to skip the video entirely on that device
-      let noVideo = (params.get('novideo') === '1' || params.get('novideo') === 'true');
-      try {
-        const stored = localStorage.getItem('fl_noVideo');
-        if (params.get('novideo') === '0' || params.get('novideo') === 'false') {
-          noVideo = false;
-          localStorage.removeItem('fl_noVideo');
-        } else {
-          if (stored === '1') noVideo = true;
-          if (noVideo && stored !== '1') localStorage.setItem('fl_noVideo', '1');
-        }
-      } catch (e) {}
+      const startBtn  = document.getElementById('startVideoBtn');
+      const video     = document.getElementById('tutorialVideo');
+      const mainTitle = document.getElementById('mainTitle');
+      const waiverFrame = document.getElementById('waiverFrame');
 
-      const startSection   = document.getElementById('startSection');
-      const videoSection   = document.getElementById('videoSection');
-      const waiverSection  = document.getElementById('waiverSection');
-
-      const startBtn       = document.getElementById('startVideoBtn');
-      const video          = document.getElementById('tutorialVideo');
-      const mainTitle      = document.getElementById('mainTitle');
-      const waiverFrame    = document.getElementById('waiverFrame');
-
-      const postSubmitActions   = document.getElementById('postSubmitActions');
       const submitAgainBtn      = document.getElementById('submitAgainBtn');
       const submitWatchVideoBtn = document.getElementById('submitWatchVideoBtn');
 
+      const WAIVER_SRC = "https://form.jotform.com/220716898706063";
+
       // Reload Jotform so each guest gets a fresh form
       function resetWaiver() {
-        if (!waiverFrame) return;
-        try {
-          const baseSrc = waiverFrame.getAttribute('data-base-src') || waiverFrame.getAttribute('src');
-          if (!baseSrc) return;
-
-          // Store base src once so we don't stack params forever
-          if (!waiverFrame.getAttribute('data-base-src')) {
-            waiverFrame.setAttribute('data-base-src', baseSrc);
-          }
-
-          const url = new URL(baseSrc, window.location.href);
-          url.searchParams.set('_t', Date.now().toString()); // cache-buster
-          waiverFrame.setAttribute('src', url.toString());
-        } catch (e) {
-          // Fallback: just reload the same src
-          waiverFrame.src = waiverFrame.src;
-        }
+        // Cache-buster so it really reloads
+        const url = WAIVER_SRC + "?_t=" + Date.now();
+        waiverFrame.setAttribute('src', url);
       }
 
-      // --- State helpers ---
+      // State helpers
       function showStart() {
-        postSubmitActions.style.display = 'none';
-
-        if (noVideo) {
-          // No-video mode: go straight to waiver
-          startSection.style.display = 'none';
-          videoSection.style.display = 'none';
-          waiverSection.style.display = 'block';
-          mainTitle.textContent = 'Sign Waiver';
-          window.scrollTo({ top: 0, behavior: 'instant' });
-          return;
-        }
-
-        startSection.style.display = 'grid';
-        videoSection.style.display = 'none';
+        startSection.style.display  = 'grid';
+        videoSection.style.display  = 'none';
         waiverSection.style.display = 'none';
 
         try {
@@ -206,30 +173,30 @@
       }
 
       function showVideo() {
-        startSection.style.display = 'none';
-        videoSection.style.display = 'block';
+        startSection.style.display  = 'none';
+        videoSection.style.display  = 'block';
         waiverSection.style.display = 'none';
-        postSubmitActions.style.display = 'none';
+
         mainTitle.textContent = 'Watch Tutorial';
       }
 
       function showWaiver() {
-        startSection.style.display = 'none';
-        videoSection.style.display = 'none';
+        startSection.style.display  = 'none';
+        videoSection.style.display  = 'none';
         waiverSection.style.display = 'block';
+
         mainTitle.textContent = 'Sign Waiver';
         waiverSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
 
-      // --- Init ---
+      // Init
       (function init() {
-        resetWaiver();  // start with a fresh form every load
+        resetWaiver();  // fresh form on load
         showStart();
       }());
 
       // Start video
       startBtn.addEventListener('click', async () => {
-        if (noVideo) return;
         showVideo();
         try {
           await video.play();
@@ -243,40 +210,17 @@
         showWaiver();
       });
 
-      // --- Jotform submission event handler ---
-      // Jotform sends a postMessage to the parent window on submit.
-      window.addEventListener('message', (evt) => {
-        if (!evt.origin || evt.origin.indexOf('jotform') === -1) return;
-
-        let data = evt.data;
-        try {
-          if (typeof data === 'string') data = JSON.parse(data);
-        } catch (e) {
-          // Not JSON, ignore parse fail
-        }
-
-        // When Jotform says submission is completed:
-        if (data && (data.type === 'submission-completed' || data.event === 'submission-completed')) {
-          // Make sure waiver section is visible
-          showWaiver();
-          // Show the two redirect buttons
-          postSubmitActions.style.display = 'flex';
-          // Scroll so buttons are in view
-          postSubmitActions.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      }, false);
-
-      // --- BUTTON: Submit & Fill Out Waiver Again ---
+      // Submit & Fill Out Waiver Again
       submitAgainBtn.addEventListener('click', () => {
-        resetWaiver();                  // new blank form
-        postSubmitActions.style.display = 'none';
-        showWaiver();                   // stay on waiver
+        // At this point they should already have tapped Submit inside the Jotform
+        resetWaiver();  // blank form for next guest
+        showWaiver();
       });
 
-      // --- BUTTON: Submit & Watch Video Again ---
+      // Submit & Watch Video Again
       submitWatchVideoBtn.addEventListener('click', () => {
-        resetWaiver();                  // prep blank form for next guest
-        postSubmitActions.style.display = 'none';
+        // Again, assumes they've already submitted inside Jotform
+        resetWaiver();  // prep blank for next guest
         showVideo();
         try {
           video.pause();
