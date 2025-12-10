@@ -9,12 +9,17 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
 
-  <!-- Force HTTPS -->
+  <!-- Force HTTPS (helps before GitHub's Enforce HTTPS is active) -->
   <script>
     if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
       location.replace('https://' + location.host + location.pathname + location.search + location.hash);
     }
   </script>
+
+  <!-- PWA manifest + icons -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="apple-touch-icon" sizes="512x512" href="icon-512.png">
 
   <style>
     :root { color-scheme: dark; }
@@ -23,70 +28,29 @@
       background:#000; color:#fff;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, sans-serif;
     }
-    body { display:grid; place-items:center; padding:12px; }
+    body { display:grid; place-items:center; padding: 12px; }
+    .wrap { width:min(100vw - 24px, 100vh * (16/9)); max-width:1024px; display:grid; gap:16px; justify-items:center; }
 
-    .wrap {
-      width:min(100vw - 24px, 100vh * (16/9));
-      max-width:1024px;
-      display:grid;
-      gap:16px;
-      justify-items:center;
-    }
-
-    h1 {
-      margin:6px 0;
-      font-size:clamp(18px,3.2vw,28px);
-      text-align:center;
-    }
+    h1 { margin:6px 0; font-size:clamp(18px,3.2vw,28px); text-align:center; }
 
     .btn {
-      padding:16px 28px;
-      border-radius:12px;
-      background:#e60000;
-      color:#fff;
-      font-size:clamp(16px,2.6vw,20px);
-      font-weight:700;
-      border:0;
-      cursor:pointer;
-      white-space:nowrap;
-    }
-
-    .btn-outline {
-      background:transparent;
-      border:2px solid #e60000;
-      color:#e60000;
+      padding:16px 28px; border-radius:12px;
+      background:#e60000; color:#fff;
+      font-size:clamp(16px,2.6vw,20px); font-weight:700;
+      border:0; cursor:pointer;
     }
 
     /* Sections */
-    #startSection  { display:grid; gap:16px; justify-items:center; }
-    #videoSection  { display:none; width:100%; }
+    #startSection { display:grid; gap:16px; justify-items:center; }
+    #videoSection { display:none; width:100%; }
     #waiverSection { display:none; width:100%; max-width:1100px; margin:0 auto; }
 
     /* Media */
     #tutorialVideo { width:100%; aspect-ratio:16/9; background:#000; }
-    #waiverFrame  { width:100%; height:1800px; border:0; background:#000; }
+    #waiverFrame { width:100%; height:1800px; border:0; background:#000; }
 
-    .hint {
-      color:#aaa;
-      font-size:13px;
-      text-align:center;
-    }
-
-    .waiver-actions {
-      display:flex;
-      gap:12px;
-      justify-content:center;
-      align-items:center;
-      margin:16px 0 0;
-      flex-wrap:wrap;
-    }
-
-    .waiver-actions-note {
-      font-size:13px;
-      color:#aaa;
-      text-align:center;
-      margin-top:4px;
-    }
+    /* Optional tiny helper text */
+    .hint { color:#aaa; font-size:13px; text-align:center; }
   </style>
 </head>
 <body>
@@ -101,15 +65,15 @@
 
     <!-- 2) Video -->
     <section id="videoSection" aria-label="Tutorial Video">
+      <!-- Replace with your actual MP4 filename in the repo root -->
       <video id="tutorialVideo" playsinline webkit-playsinline preload="metadata" controls>
-        <!-- Replace with your MP4 path if needed -->
         <source src="./Waiver-Tutorial.mp4" type="video/mp4">
         Your browser does not support HTML video.
       </video>
       <div class="hint">When the video ends, the waiver will appear below.</div>
     </section>
 
-    <!-- 3) Waiver -->
+    <!-- 3) Waiver (same page) -->
     <section id="waiverSection" aria-label="Waiver Form">
       <iframe
         id="waiverFrame"
@@ -117,158 +81,116 @@
         src="https://form.jotform.com/220716898706063"
         allow="fullscreen">
       </iframe>
-
-      <!-- Shown AFTER Jotform submission is detected -->
-      <div id="postSubmitActions" class="waiver-actions" style="display:none;">
-        <button id="submitAgainBtn" class="btn">
-          📝 Submit &amp; Fill Out Waiver Again
-        </button>
-        <button id="submitWatchVideoBtn" class="btn btn-outline">
-          🎬 Submit &amp; Watch Video Again
-        </button>
-      </div>
-      <div id="postSubmitNote" class="waiver-actions-note" style="display:none;">
-        Your waiver has been submitted. Choose what to do next.
-      </div>
     </section>
   </div>
 
   <script>
     (function () {
-      const BASE_WAIVER_SRC = "https://form.jotform.com/220716898706063";
+      const params = new URLSearchParams(location.search);
 
-      // Elements
+      // --- Persist "noVideo" mode using localStorage ---
+      let noVideo = (params.get('novideo') === '1' || params.get('novideo') === 'true');
+
+      try {
+        const stored = localStorage.getItem('fl_noVideo');
+
+        // If URL says novideo=0 or novideo=false → turn OFF no-video mode and clear storage
+        if (params.get('novideo') === '0' || params.get('novideo') === 'false') {
+          noVideo = false;
+          localStorage.removeItem('fl_noVideo');
+        } else {
+          // If we've ever enabled no-video before, keep it on
+          if (stored === '1') {
+            noVideo = true;
+          }
+          // If URL currently has novideo=1/true, save it for future loads
+          if (noVideo && stored !== '1') {
+            localStorage.setItem('fl_noVideo', '1');
+          }
+        }
+      } catch (e) {
+        // If localStorage is unavailable, just fall back to URL param behavior
+      }
+
       const startSection  = document.getElementById('startSection');
       const videoSection  = document.getElementById('videoSection');
       const waiverSection = document.getElementById('waiverSection');
 
-      const startBtn  = document.getElementById('startVideoBtn');
-      const video     = document.getElementById('tutorialVideo');
+      const startBtn = document.getElementById('startVideoBtn');
+      const video    = document.getElementById('tutorialVideo');
       const mainTitle = document.getElementById('mainTitle');
-      const waiverFrame = document.getElementById('waiverFrame');
 
-      const postSubmitActions = document.getElementById('postSubmitActions');
-      const postSubmitNote    = document.getElementById('postSubmitNote');
-      const submitAgainBtn      = document.getElementById('submitAgainBtn');
-      const submitWatchVideoBtn = document.getElementById('submitWatchVideoBtn');
-
-      // Fresh Jotform
-      function resetWaiver() {
-        const url = BASE_WAIVER_SRC + "?_t=" + Date.now();
-        waiverFrame.setAttribute('src', url);
-      }
-
-      // View helpers
+      // --- State helpers ---
       function showStart() {
-        startSection.style.display  = 'grid';
-        videoSection.style.display  = 'none';
+        if (noVideo) {
+          // No-video mode: go straight to waiver
+          startSection.style.display = 'none';
+          videoSection.style.display = 'none';
+          waiverSection.style.display = 'block';
+          mainTitle.textContent = 'Sign Waiver';
+          window.scrollTo({ top: 0, behavior: 'instant' });
+          return;
+        }
+
+        // Normal mode (video + waiver)
+        startSection.style.display = 'grid';
+        videoSection.style.display = 'none';
         waiverSection.style.display = 'none';
-
-        postSubmitActions.style.display = 'none';
-        postSubmitNote.style.display    = 'none';
-
-        try {
-          video.pause();
-          video.currentTime = 0;
-        } catch (e) {}
-
-        mainTitle.textContent = 'Tap to Watch Tutorial, Then Sign Waiver';
+        try { video.pause(); video.currentTime = 0; } catch(e) {}
+        if (params.get('submitted') === '1') {
+          const url = new URL(location.href);
+          url.searchParams.delete('submitted');
+          history.replaceState(null, '', url.toString());
+        }
         window.scrollTo({ top: 0, behavior: 'instant' });
       }
 
       function showVideo() {
-        startSection.style.display  = 'none';
-        videoSection.style.display  = 'block';
+        startSection.style.display = 'none';
+        videoSection.style.display = 'block';
         waiverSection.style.display = 'none';
-
-        postSubmitActions.style.display = 'none';
-        postSubmitNote.style.display    = 'none';
-
-        mainTitle.textContent = 'Watch Tutorial';
       }
 
       function showWaiver() {
-        startSection.style.display  = 'none';
-        videoSection.style.display  = 'none';
         waiverSection.style.display = 'block';
-
-        mainTitle.textContent = 'Sign Waiver';
         waiverSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
 
-      function showPostSubmitOptions() {
-        postSubmitActions.style.display = 'flex';
-        postSubmitNote.style.display    = 'block';
-        postSubmitActions.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
+      // Init: if returning from Jotform (?submitted=1), reset to Start
+      (function initFromQuery() {
+        // If novideo is set or stored, skip straight to waiver
+        if (noVideo) {
+          showStart();  // showStart handles noVideo path
+          return;
+        }
 
-      // Init
-      (function init() {
-        resetWaiver();
+        if (params.get('submitted') === '1') {
+          showStart();
+          return;
+        }
         showStart();
       }());
 
-      // Start video
+      // Start video with user gesture (unlocks audio)
       startBtn.addEventListener('click', async () => {
+        if (noVideo) return; // in no-video mode the button is hidden anyway
         showVideo();
-        try {
-          await video.play();
-        } catch (err) {
-          console.warn('play() blocked:', err);
-        }
+        try { await video.play(); } catch (err) { console.warn('play() blocked:', err); }
       });
 
-      // After video ends, show waiver
-      video.addEventListener('ended', () => {
-        showWaiver();
-      });
+      // On video end, reveal waiver on same page
+      video.addEventListener('ended', showWaiver);
 
-      // Listen for Jotform's submission-completed message
+      // Future-proof: handle potential Jotform postMessage
       window.addEventListener('message', (evt) => {
         if (!evt.origin || evt.origin.indexOf('jotform') === -1) return;
-
-        let data = evt.data;
         try {
-          if (typeof data === 'string') data = JSON.parse(data);
-        } catch (e) {
-          // Some messages are plain strings we don't care about
-        }
-
-        if (!data) return;
-
-        const action = data.action || data.type || data.event;
-
-        if (action === 'submission-completed') {
-          // Jotform confirms: waiver has been submitted
-          console.log('Jotform submission-completed detected');
-          showWaiver();
-          showPostSubmitOptions();
-        }
+          const data = typeof evt.data === 'string' ? JSON.parse(evt.data) : evt.data;
+          if (data && (data.type === 'submission-completed' || data.event === 'submission-completed')) {
+            showStart();
+          }
+        } catch {}
       }, false);
-
-      // Submit & Fill Out Waiver Again
-      submitAgainBtn.addEventListener('click', () => {
-        resetWaiver();                // Fresh form
-        showWaiver();                 // Stay on waiver
-        postSubmitActions.style.display = 'none';
-        postSubmitNote.style.display    = 'none';
-      });
-
-      // Submit & Watch Video Again
-      submitWatchVideoBtn.addEventListener('click', () => {
-        resetWaiver();                // Prep blank form for next guest
-        postSubmitActions.style.display = 'none';
-        postSubmitNote.style.display    = 'none';
-
-        showVideo();
-        try {
-          video.pause();
-          video.currentTime = 0;
-          video.play().catch(() => {});
-        } catch (e) {}
-
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      });
     }());
   </script>
 </body>
