@@ -5,6 +5,17 @@
   <title>Fastest Lap Waiver + Tutorial</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#000000">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+
+  <!-- Force HTTPS -->
+  <script>
+    if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+      location.replace('https://' + location.host + location.pathname + location.search + location.hash);
+    }
+  </script>
+
   <style>
     :root { color-scheme: dark; }
     html, body {
@@ -13,6 +24,7 @@
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, sans-serif;
     }
     body { display:grid; place-items:center; padding:12px; }
+
     .wrap {
       width:min(100vw - 24px, 100vh * (16/9));
       max-width:1024px;
@@ -20,21 +32,31 @@
       gap:14px;
       justify-items:center;
     }
+
     h1 { margin:6px 0; font-size:clamp(18px,3.2vw,28px); text-align:center; }
 
     .btn{
-      padding:16px 28px; border-radius:12px;
-      background:#e60000; color:#fff;
-      font-size:clamp(16px,2.6vw,20px); font-weight:800;
-      border:0; cursor:pointer; white-space:nowrap;
+      padding:16px 28px;
+      border-radius:12px;
+      background:#e60000;
+      color:#fff;
+      font-size:clamp(16px,2.6vw,20px);
+      font-weight:800;
+      border:0;
+      cursor:pointer;
+      white-space:nowrap;
+      min-width: 280px;
     }
     .btn:active{ transform: translateY(1px); }
-    .hint { color:#aaa; font-size:13px; text-align:center; }
 
-    #startSection { display:grid; gap:12px; justify-items:center; }
-    #videoSection { display:none; width:100%; }
+    .hint { color:#aaa; font-size:13px; text-align:center; max-width: 680px; }
+
+    /* Sections */
+    #startSection  { display:grid; gap:12px; justify-items:center; }
+    #videoSection  { display:none; width:100%; }
     #waiverSection { display:none; width:100%; max-width:1100px; margin:0 auto; }
 
+    /* Media */
     #tutorialVideo { width:100%; aspect-ratio:16/9; background:#000; }
 
     #waiverFrame { width:100%; height:1800px; border:0; background:#000; }
@@ -50,7 +72,7 @@
     }
     .kioskTitle{
       font-size:16px;
-      font-weight:800;
+      font-weight:900;
       text-align:center;
     }
     .kioskSub{
@@ -72,26 +94,32 @@
   <div class="wrap">
     <h1 id="mainTitle">Tap to Watch Tutorial, Then Sign Waiver</h1>
 
-    <!-- Start -->
-    <section id="startSection">
+    <!-- 1) Start -->
+    <section id="startSection" aria-label="Start">
       <button id="startVideoBtn" class="btn">🎬 Start Group Video</button>
-      <div class="hint">After the video, waivers can be signed one-by-one.</div>
+      <button id="skipVideoBtn" class="btn">📝 Skip Video → Sign Waiver</button>
+
+      <div class="hint">
+        Use <b>Start Group Video</b> for new groups. Use <b>Skip Video</b> for late arrivals or repeat customers.
+        After the video, waivers can be signed one-by-one.
+      </div>
     </section>
 
-    <!-- Video -->
-    <section id="videoSection">
+    <!-- 2) Video -->
+    <section id="videoSection" aria-label="Tutorial Video">
       <video id="tutorialVideo" playsinline webkit-playsinline preload="metadata" controls>
         <source src="./Waiver-Tutorial.mp4" type="video/mp4">
+        Your browser does not support HTML video.
       </video>
-      <div class="hint">When the video ends, the waiver station opens.</div>
+      <div class="hint">When the video ends, the waiver station opens automatically.</div>
     </section>
 
-    <!-- Waiver Kiosk -->
-    <section id="waiverSection">
+    <!-- 3) Waiver Kiosk -->
+    <section id="waiverSection" aria-label="Waiver Form">
       <div class="kioskBar">
         <div class="kioskTitle">✅ Waiver Station (One Person at a Time)</div>
         <div class="kioskSub">
-          Each person: fill out the form above → tap <b>Submit</b> inside the form → then tap <b>Next Person</b> below.
+          Each person: fill out the form → tap <b>Submit</b> inside the form → then tap <b>Next Person</b> below.
         </div>
         <div class="actions">
           <button id="nextPersonBtn" class="btn">📝 Next Person (New Waiver)</button>
@@ -118,6 +146,7 @@
       const waiverSection = document.getElementById('waiverSection');
 
       const startBtn = document.getElementById('startVideoBtn');
+      const skipVideoBtn = document.getElementById('skipVideoBtn');
       const video = document.getElementById('tutorialVideo');
       const waiverFrame = document.getElementById('waiverFrame');
       const nextPersonBtn = document.getElementById('nextPersonBtn');
@@ -150,7 +179,6 @@
       }
 
       function resetWaiver(){
-        // Hard reload with cache-buster so it comes up clean for the next person
         waiverFrame.src = BASE_WAIVER_SRC + "?_t=" + Date.now();
       }
 
@@ -158,33 +186,39 @@
       resetWaiver();
       showStart();
 
-      // start group video
+      // Start Group Video
       startBtn.addEventListener('click', async () => {
         showVideo();
         try { await video.play(); } catch(e) {}
       });
 
-      // when video ends -> waiver station opens
+      // Skip Video → Waiver
+      skipVideoBtn.addEventListener('click', () => {
+        resetWaiver();
+        showWaiver();
+      });
+
+      // When video ends → open waiver station
       video.addEventListener('ended', () => {
         resetWaiver();
         showWaiver();
       });
 
-      // Next person: blank form again
+      // Next Person: blank form again
       nextPersonBtn.addEventListener('click', () => {
         resetWaiver();
-        // keep them at top so the next guest sees the form immediately
         waiverSection.scrollIntoView({behavior:'smooth', block:'start'});
       });
 
-      // Next group: replay video
+      // Replay Video: next group
       replayVideoBtn.addEventListener('click', () => {
-        resetWaiver(); // prep for later
+        resetWaiver(); // prep for next signer after video
         showVideo();
         try {
           video.pause(); video.currentTime=0;
           video.play().catch(()=>{});
         } catch(e){}
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       });
     }());
   </script>
