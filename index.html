@@ -12,52 +12,61 @@
   <style>
     :root { color-scheme: dark; }
     html, body {
-      margin:0; height:100%;
-      background:#000; color:#fff;
+      margin: 0;
+      height: 100%;
+      background: #000;
+      color: #fff;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, sans-serif;
     }
-    body { display:grid; place-items:center; padding:12px; }
+    body {
+      display: grid;
+      place-items: center;
+      padding: 12px;
+    }
 
     .wrap {
-      width:min(100vw - 24px, 100vh * (16/9));
-      max-width:1024px;
-      display:grid;
-      gap:14px;
-      justify-items:center;
+      width: min(100vw - 24px, 100vh * (16/9));
+      max-width: 1024px;
+      display: grid;
+      gap: 14px;
+      justify-items: center;
     }
 
-    h1 { margin:6px 0; font-size:clamp(18px,3.2vw,28px); text-align:center; }
+    h1 {
+      margin: 6px 0;
+      font-size: clamp(18px, 3.2vw, 28px);
+      text-align: center;
+    }
 
-    .btn{
-      padding:16px 28px;
-      border-radius:12px;
-      background:#e60000;
-      color:#fff;
-      font-size:clamp(16px,2.6vw,20px);
-      font-weight:800;
-      border:0;
-      cursor:pointer;
-      white-space:nowrap;
+    .btn {
+      padding: 16px 28px;
+      border-radius: 12px;
+      background: #e60000;
+      color: #fff;
+      font-size: clamp(16px, 2.6vw, 20px);
+      font-weight: 800;
+      border: 0;
+      cursor: pointer;
+      white-space: nowrap;
       min-width: 320px;
     }
-    .btn:active{ transform: translateY(1px); }
-
-    .hint {
-      color:#aaa;
-      font-size:13px;
-      text-align:center;
-      max-width: 720px;
-      line-height: 1.35;
-    }
+    .btn:active { transform: translateY(1px); }
 
     /* Sections */
-    #startSection  { display:grid; gap:12px; justify-items:center; }
-    #videoSection  { display:none; width:100%; }
-    #waiverSection { display:none; width:100%; max-width:1100px; margin:0 auto; }
+    #startSection  { display: grid; gap: 12px; justify-items: center; }
+    #videoSection  { display: none; width: 100%; }
+    #waiverSection { display: none; width: 100%; max-width: 1100px; margin: 0 auto; }
 
     /* Media */
-    #tutorialVideo { width:100%; aspect-ratio:16/9; background:#000; }
-    #waiverFrame   { width:100%; height:1800px; border:0; background:#000; }
+    #tutorialVideo { width: 100%; aspect-ratio: 16/9; background: #000; }
+    #waiverFrame   { width: 100%; height: 1800px; border: 0; background: #000; }
+
+    .hint {
+      color: #aaa;
+      font-size: 13px;
+      text-align: center;
+      line-height: 1.35;
+    }
   </style>
 </head>
 
@@ -65,24 +74,22 @@
   <div class="wrap">
     <h1 id="mainTitle">Watch Tutorial or Sign Waiver</h1>
 
-    <!-- Start screen -->
+    <!-- Start -->
     <section id="startSection" aria-label="Start">
-      <button id="startVideoBtn" class="btn">🎬 Start Video</button>
-      <button id="skipVideoBtn" class="btn">📝 Sign Waiver</button>
+      <button id="startVideoBtn" class="btn">🎬 Start Group Video</button>
+      <button id="signWaiverBtn" class="btn">📝 Sign Waiver</button>
     </section>
 
-
-    <!-- Video screen -->
+    <!-- Video -->
     <section id="videoSection" aria-label="Tutorial Video">
       <video id="tutorialVideo" playsinline webkit-playsinline preload="metadata" controls>
         <source src="./Waiver-Tutorial.mp4" type="video/mp4">
         Your browser does not support HTML video.
       </video>
-
       <div class="hint">When the video ends, the waiver opens automatically.</div>
     </section>
 
-    <!-- Waiver screen (ONLY the form) -->
+    <!-- Waiver -->
     <section id="waiverSection" aria-label="Waiver Form">
       <iframe
         id="waiverFrame"
@@ -95,30 +102,35 @@
   </div>
 
   <script>
-    (function(){
+    (function () {
       const BASE_WAIVER_SRC = "https://form.jotform.com/220716898706063";
 
-      const startSection  = document.getElementById('startSection');
-      const videoSection  = document.getElementById('videoSection');
+      const startSection = document.getElementById('startSection');
+      const videoSection = document.getElementById('videoSection');
       const waiverSection = document.getElementById('waiverSection');
 
       const startVideoBtn = document.getElementById('startVideoBtn');
-      const skipVideoBtn  = document.getElementById('skipVideoBtn');
+      const signWaiverBtn = document.getElementById('signWaiverBtn');
 
-      const video       = document.getElementById('tutorialVideo');
+      const video = document.getElementById('tutorialVideo');
       const waiverFrame = document.getElementById('waiverFrame');
-      const mainTitle   = document.getElementById('mainTitle');
+      const mainTitle = document.getElementById('mainTitle');
 
-      function showStart(){
+      function resetWaiver() {
+        // Cache-buster forces a clean load each time you enter the waiver screen
+        waiverFrame.src = BASE_WAIVER_SRC + "?_t=" + Date.now();
+      }
+
+      function showStart() {
         startSection.style.display = 'grid';
         videoSection.style.display = 'none';
         waiverSection.style.display = 'none';
-        <h1 id="mainTitle">Tap to Watch Video or Fill Out Waiver</h1>
-        try { video.pause(); video.currentTime = 0; } catch(e){}
+        mainTitle.textContent = 'Watch Tutorial or Sign Waiver';
+        try { video.pause(); video.currentTime = 0; } catch (e) {}
         window.scrollTo(0, 0);
       }
 
-      function showVideo(){
+      function showVideo() {
         startSection.style.display = 'none';
         videoSection.style.display = 'block';
         waiverSection.style.display = 'none';
@@ -126,17 +138,12 @@
         window.scrollTo(0, 0);
       }
 
-      function showWaiver(){
+      function showWaiver() {
         startSection.style.display = 'none';
         videoSection.style.display = 'none';
         waiverSection.style.display = 'block';
         mainTitle.textContent = 'Sign Waiver';
-        waiverSection.scrollIntoView({ behavior:'smooth', block:'start' });
-      }
-
-      function resetWaiver(){
-        // Cache-buster forces a clean load each time you enter the waiver screen
-        waiverFrame.src = BASE_WAIVER_SRC + "?_t=" + Date.now();
+        waiverSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
 
       // Init
@@ -145,16 +152,16 @@
       // Start Group Video
       startVideoBtn.addEventListener('click', async () => {
         showVideo();
-        try { await video.play(); } catch(e) {}
+        try { await video.play(); } catch (e) {}
       });
 
-      // Skip Video → Sign Waiver
-      skipVideoBtn.addEventListener('click', () => {
+      // Sign Waiver (skip video)
+      signWaiverBtn.addEventListener('click', () => {
         resetWaiver();
         showWaiver();
       });
 
-      // When video ends → open waiver
+      // Video ended -> open waiver
       video.addEventListener('ended', () => {
         resetWaiver();
         showWaiver();
@@ -163,4 +170,3 @@
   </script>
 </body>
 </html>
-
