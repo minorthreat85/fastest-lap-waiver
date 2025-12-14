@@ -5,22 +5,6 @@
   <title>Fastest Lap Waiver + Tutorial</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#000000">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
-
-  <!-- Force HTTPS (helps before GitHub's Enforce HTTPS is active) -->
-  <script>
-    if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
-      location.replace('https://' + location.host + location.pathname + location.search + location.hash);
-    }
-  </script>
-
-  <!-- PWA manifest + icons -->
-  <link rel="manifest" href="manifest.webmanifest">
-  <link rel="apple-touch-icon" href="icon-192.png">
-  <link rel="apple-touch-icon" sizes="512x512" href="icon-512.png">
-
   <style>
     :root { color-scheme: dark; }
     html, body {
@@ -28,169 +12,180 @@
       background:#000; color:#fff;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, sans-serif;
     }
-    body { display:grid; place-items:center; padding: 12px; }
-    .wrap { width:min(100vw - 24px, 100vh * (16/9)); max-width:1024px; display:grid; gap:16px; justify-items:center; }
-
+    body { display:grid; place-items:center; padding:12px; }
+    .wrap {
+      width:min(100vw - 24px, 100vh * (16/9));
+      max-width:1024px;
+      display:grid;
+      gap:14px;
+      justify-items:center;
+    }
     h1 { margin:6px 0; font-size:clamp(18px,3.2vw,28px); text-align:center; }
 
-    .btn {
+    .btn{
       padding:16px 28px; border-radius:12px;
       background:#e60000; color:#fff;
-      font-size:clamp(16px,2.6vw,20px); font-weight:700;
-      border:0; cursor:pointer;
+      font-size:clamp(16px,2.6vw,20px); font-weight:800;
+      border:0; cursor:pointer; white-space:nowrap;
     }
+    .btn:active{ transform: translateY(1px); }
+    .hint { color:#aaa; font-size:13px; text-align:center; }
 
-    /* Sections */
-    #startSection { display:grid; gap:16px; justify-items:center; }
+    #startSection { display:grid; gap:12px; justify-items:center; }
     #videoSection { display:none; width:100%; }
     #waiverSection { display:none; width:100%; max-width:1100px; margin:0 auto; }
 
-    /* Media */
     #tutorialVideo { width:100%; aspect-ratio:16/9; background:#000; }
+
     #waiverFrame { width:100%; height:1800px; border:0; background:#000; }
 
-    /* Optional tiny helper text */
-    .hint { color:#aaa; font-size:13px; text-align:center; }
+    .kioskBar{
+      width:100%;
+      background:#111;
+      border:1px solid #222;
+      border-radius:12px;
+      padding:12px 14px;
+      display:grid;
+      gap:8px;
+    }
+    .kioskTitle{
+      font-size:16px;
+      font-weight:800;
+      text-align:center;
+    }
+    .kioskSub{
+      font-size:13px;
+      color:#aaa;
+      text-align:center;
+      line-height:1.25;
+    }
+    .actions{
+      display:flex;
+      gap:12px;
+      justify-content:center;
+      flex-wrap:wrap;
+      margin-top:6px;
+    }
   </style>
 </head>
 <body>
   <div class="wrap">
     <h1 id="mainTitle">Tap to Watch Tutorial, Then Sign Waiver</h1>
 
-    <!-- 1) Start -->
-    <section id="startSection" aria-label="Start">
-      <button id="startVideoBtn" class="btn">🎬 Tap to Start Video</button>
-      <div class="hint">Audio starts after you tap.</div>
+    <!-- Start -->
+    <section id="startSection">
+      <button id="startVideoBtn" class="btn">🎬 Start Group Video</button>
+      <div class="hint">After the video, waivers can be signed one-by-one.</div>
     </section>
 
-    <!-- 2) Video -->
-    <section id="videoSection" aria-label="Tutorial Video">
-      <!-- Replace with your actual MP4 filename in the repo root -->
+    <!-- Video -->
+    <section id="videoSection">
       <video id="tutorialVideo" playsinline webkit-playsinline preload="metadata" controls>
         <source src="./Waiver-Tutorial.mp4" type="video/mp4">
-        Your browser does not support HTML video.
       </video>
-      <div class="hint">When the video ends, the waiver will appear below.</div>
+      <div class="hint">When the video ends, the waiver station opens.</div>
     </section>
 
-    <!-- 3) Waiver (same page) -->
-    <section id="waiverSection" aria-label="Waiver Form">
+    <!-- Waiver Kiosk -->
+    <section id="waiverSection">
+      <div class="kioskBar">
+        <div class="kioskTitle">✅ Waiver Station (One Person at a Time)</div>
+        <div class="kioskSub">
+          Each person: fill out the form above → tap <b>Submit</b> inside the form → then tap <b>Next Person</b> below.
+        </div>
+        <div class="actions">
+          <button id="nextPersonBtn" class="btn">📝 Next Person (New Waiver)</button>
+          <button id="replayVideoBtn" class="btn">🎬 Replay Video (Next Group)</button>
+        </div>
+      </div>
+
       <iframe
         id="waiverFrame"
         title="Fastest Lap Waiver"
         src="https://form.jotform.com/220716898706063"
-        allow="fullscreen">
+        allowfullscreen="true"
+        frameborder="0">
       </iframe>
     </section>
   </div>
 
   <script>
-    (function () {
-      const params = new URLSearchParams(location.search);
+    (function(){
+      const BASE_WAIVER_SRC = "https://form.jotform.com/220716898706063";
 
-      // --- Persist "noVideo" mode using localStorage ---
-      let noVideo = (params.get('novideo') === '1' || params.get('novideo') === 'true');
-
-      try {
-        const stored = localStorage.getItem('fl_noVideo');
-
-        // If URL says novideo=0 or novideo=false → turn OFF no-video mode and clear storage
-        if (params.get('novideo') === '0' || params.get('novideo') === 'false') {
-          noVideo = false;
-          localStorage.removeItem('fl_noVideo');
-        } else {
-          // If we've ever enabled no-video before, keep it on
-          if (stored === '1') {
-            noVideo = true;
-          }
-          // If URL currently has novideo=1/true, save it for future loads
-          if (noVideo && stored !== '1') {
-            localStorage.setItem('fl_noVideo', '1');
-          }
-        }
-      } catch (e) {
-        // If localStorage is unavailable, just fall back to URL param behavior
-      }
-
-      const startSection  = document.getElementById('startSection');
-      const videoSection  = document.getElementById('videoSection');
+      const startSection = document.getElementById('startSection');
+      const videoSection = document.getElementById('videoSection');
       const waiverSection = document.getElementById('waiverSection');
 
       const startBtn = document.getElementById('startVideoBtn');
-      const video    = document.getElementById('tutorialVideo');
+      const video = document.getElementById('tutorialVideo');
+      const waiverFrame = document.getElementById('waiverFrame');
+      const nextPersonBtn = document.getElementById('nextPersonBtn');
+      const replayVideoBtn = document.getElementById('replayVideoBtn');
       const mainTitle = document.getElementById('mainTitle');
 
-      // --- State helpers ---
-      function showStart() {
-        if (noVideo) {
-          // No-video mode: go straight to waiver
-          startSection.style.display = 'none';
-          videoSection.style.display = 'none';
-          waiverSection.style.display = 'block';
-          mainTitle.textContent = 'Sign Waiver';
-          window.scrollTo({ top: 0, behavior: 'instant' });
-          return;
-        }
-
-        // Normal mode (video + waiver)
-        startSection.style.display = 'grid';
-        videoSection.style.display = 'none';
-        waiverSection.style.display = 'none';
-        try { video.pause(); video.currentTime = 0; } catch(e) {}
-        if (params.get('submitted') === '1') {
-          const url = new URL(location.href);
-          url.searchParams.delete('submitted');
-          history.replaceState(null, '', url.toString());
-        }
-        window.scrollTo({ top: 0, behavior: 'instant' });
+      function showStart(){
+        startSection.style.display='grid';
+        videoSection.style.display='none';
+        waiverSection.style.display='none';
+        mainTitle.textContent='Tap to Watch Tutorial, Then Sign Waiver';
+        try { video.pause(); video.currentTime=0; } catch(e){}
+        window.scrollTo(0,0);
       }
 
-      function showVideo() {
-        startSection.style.display = 'none';
-        videoSection.style.display = 'block';
-        waiverSection.style.display = 'none';
+      function showVideo(){
+        startSection.style.display='none';
+        videoSection.style.display='block';
+        waiverSection.style.display='none';
+        mainTitle.textContent='Watch Tutorial';
+        window.scrollTo(0,0);
       }
 
-      function showWaiver() {
-        waiverSection.style.display = 'block';
-        waiverSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      function showWaiver(){
+        startSection.style.display='none';
+        videoSection.style.display='none';
+        waiverSection.style.display='block';
+        mainTitle.textContent='Sign Waiver';
+        waiverSection.scrollIntoView({behavior:'smooth', block:'start'});
       }
 
-      // Init: if returning from Jotform (?submitted=1), reset to Start
-      (function initFromQuery() {
-        // If novideo is set or stored, skip straight to waiver
-        if (noVideo) {
-          showStart();  // showStart handles noVideo path
-          return;
-        }
+      function resetWaiver(){
+        // Hard reload with cache-buster so it comes up clean for the next person
+        waiverFrame.src = BASE_WAIVER_SRC + "?_t=" + Date.now();
+      }
 
-        if (params.get('submitted') === '1') {
-          showStart();
-          return;
-        }
-        showStart();
-      }());
+      // init
+      resetWaiver();
+      showStart();
 
-      // Start video with user gesture (unlocks audio)
+      // start group video
       startBtn.addEventListener('click', async () => {
-        if (noVideo) return; // in no-video mode the button is hidden anyway
         showVideo();
-        try { await video.play(); } catch (err) { console.warn('play() blocked:', err); }
+        try { await video.play(); } catch(e) {}
       });
 
-      // On video end, reveal waiver on same page
-      video.addEventListener('ended', showWaiver);
+      // when video ends -> waiver station opens
+      video.addEventListener('ended', () => {
+        resetWaiver();
+        showWaiver();
+      });
 
-      // Future-proof: handle potential Jotform postMessage
-      window.addEventListener('message', (evt) => {
-        if (!evt.origin || evt.origin.indexOf('jotform') === -1) return;
+      // Next person: blank form again
+      nextPersonBtn.addEventListener('click', () => {
+        resetWaiver();
+        // keep them at top so the next guest sees the form immediately
+        waiverSection.scrollIntoView({behavior:'smooth', block:'start'});
+      });
+
+      // Next group: replay video
+      replayVideoBtn.addEventListener('click', () => {
+        resetWaiver(); // prep for later
+        showVideo();
         try {
-          const data = typeof evt.data === 'string' ? JSON.parse(evt.data) : evt.data;
-          if (data && (data.type === 'submission-completed' || data.event === 'submission-completed')) {
-            showStart();
-          }
-        } catch {}
-      }, false);
+          video.pause(); video.currentTime=0;
+          video.play().catch(()=>{});
+        } catch(e){}
+      });
     }());
   </script>
 </body>
