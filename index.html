@@ -117,4 +117,52 @@
         videoSection.style.display = 'none';
         waiverSection.style.display = 'none';
         mainTitle.textContent = 'Tap to Watch Tutorial, Then Sign Waiver';
-        try { video.pause(); video.cur
+        try { video.pause(); video.currentTime = 0; } catch(e){}
+        window.scrollTo(0, 0);
+      }
+
+      function showVideo(){
+        startSection.style.display = 'none';
+        videoSection.style.display = 'block';
+        waiverSection.style.display = 'none';
+        mainTitle.textContent = 'Watch Tutorial';
+        window.scrollTo(0, 0);
+      }
+
+      function showWaiver(){
+        startSection.style.display = 'none';
+        videoSection.style.display = 'none';
+        waiverSection.style.display = 'block';
+        mainTitle.textContent = 'Sign Waiver';
+        waiverSection.scrollIntoView({ behavior:'smooth', block:'start' });
+      }
+
+      function resetWaiver(){
+        // Cache-buster forces a clean load each time you enter the waiver screen
+        waiverFrame.src = BASE_WAIVER_SRC + "?_t=" + Date.now();
+      }
+
+      // Init
+      showStart();
+
+      // Start Group Video
+      startVideoBtn.addEventListener('click', async () => {
+        showVideo();
+        try { await video.play(); } catch(e) {}
+      });
+
+      // Skip Video → Sign Waiver
+      skipVideoBtn.addEventListener('click', () => {
+        resetWaiver();
+        showWaiver();
+      });
+
+      // When video ends → open waiver
+      video.addEventListener('ended', () => {
+        resetWaiver();
+        showWaiver();
+      });
+    }());
+  </script>
+</body>
+</html>
