@@ -9,13 +9,6 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
 
-  <!-- Force HTTPS -->
-  <script>
-    if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
-      location.replace('https://' + location.host + location.pathname + location.search + location.hash);
-    }
-  </script>
-
   <style>
     :root { color-scheme: dark; }
     html, body {
@@ -45,11 +38,17 @@
       border:0;
       cursor:pointer;
       white-space:nowrap;
-      min-width: 280px;
+      min-width: 320px;
     }
     .btn:active{ transform: translateY(1px); }
 
-    .hint { color:#aaa; font-size:13px; text-align:center; max-width: 680px; }
+    .hint {
+      color:#aaa;
+      font-size:13px;
+      text-align:center;
+      max-width: 720px;
+      line-height: 1.35;
+    }
 
     /* Sections */
     #startSection  { display:grid; gap:12px; justify-items:center; }
@@ -58,75 +57,36 @@
 
     /* Media */
     #tutorialVideo { width:100%; aspect-ratio:16/9; background:#000; }
-
-    #waiverFrame { width:100%; height:1800px; border:0; background:#000; }
-
-    .kioskBar{
-      width:100%;
-      background:#111;
-      border:1px solid #222;
-      border-radius:12px;
-      padding:12px 14px;
-      display:grid;
-      gap:8px;
-    }
-    .kioskTitle{
-      font-size:16px;
-      font-weight:900;
-      text-align:center;
-    }
-    .kioskSub{
-      font-size:13px;
-      color:#aaa;
-      text-align:center;
-      line-height:1.25;
-    }
-    .actions{
-      display:flex;
-      gap:12px;
-      justify-content:center;
-      flex-wrap:wrap;
-      margin-top:6px;
-    }
+    #waiverFrame   { width:100%; height:1800px; border:0; background:#000; }
   </style>
 </head>
+
 <body>
   <div class="wrap">
     <h1 id="mainTitle">Tap to Watch Tutorial, Then Sign Waiver</h1>
 
-    <!-- 1) Start -->
+    <!-- Start screen -->
     <section id="startSection" aria-label="Start">
       <button id="startVideoBtn" class="btn">🎬 Start Group Video</button>
       <button id="skipVideoBtn" class="btn">📝 Skip Video → Sign Waiver</button>
 
       <div class="hint">
         Use <b>Start Group Video</b> for new groups. Use <b>Skip Video</b> for late arrivals or repeat customers.
-        After the video, waivers can be signed one-by-one.
       </div>
     </section>
 
-    <!-- 2) Video -->
+    <!-- Video screen -->
     <section id="videoSection" aria-label="Tutorial Video">
       <video id="tutorialVideo" playsinline webkit-playsinline preload="metadata" controls>
         <source src="./Waiver-Tutorial.mp4" type="video/mp4">
         Your browser does not support HTML video.
       </video>
-      <div class="hint">When the video ends, the waiver station opens automatically.</div>
+
+      <div class="hint">When the video ends, the waiver opens automatically.</div>
     </section>
 
-    <!-- 3) Waiver Kiosk -->
+    <!-- Waiver screen (ONLY the form) -->
     <section id="waiverSection" aria-label="Waiver Form">
-      <div class="kioskBar">
-        <div class="kioskTitle">✅ Waiver Station (One Person at a Time)</div>
-        <div class="kioskSub">
-          Each person: fill out the form → tap <b>Submit</b> inside the form → then tap <b>Next Person</b> below.
-        </div>
-        <div class="actions">
-          <button id="nextPersonBtn" class="btn">📝 Next Person (New Waiver)</button>
-          <button id="replayVideoBtn" class="btn">🎬 Replay Video (Next Group)</button>
-        </div>
-      </div>
-
       <iframe
         id="waiverFrame"
         title="Fastest Lap Waiver"
@@ -141,86 +101,20 @@
     (function(){
       const BASE_WAIVER_SRC = "https://form.jotform.com/220716898706063";
 
-      const startSection = document.getElementById('startSection');
-      const videoSection = document.getElementById('videoSection');
+      const startSection  = document.getElementById('startSection');
+      const videoSection  = document.getElementById('videoSection');
       const waiverSection = document.getElementById('waiverSection');
 
-      const startBtn = document.getElementById('startVideoBtn');
-      const skipVideoBtn = document.getElementById('skipVideoBtn');
-      const video = document.getElementById('tutorialVideo');
+      const startVideoBtn = document.getElementById('startVideoBtn');
+      const skipVideoBtn  = document.getElementById('skipVideoBtn');
+
+      const video       = document.getElementById('tutorialVideo');
       const waiverFrame = document.getElementById('waiverFrame');
-      const nextPersonBtn = document.getElementById('nextPersonBtn');
-      const replayVideoBtn = document.getElementById('replayVideoBtn');
-      const mainTitle = document.getElementById('mainTitle');
+      const mainTitle   = document.getElementById('mainTitle');
 
       function showStart(){
-        startSection.style.display='grid';
-        videoSection.style.display='none';
-        waiverSection.style.display='none';
-        mainTitle.textContent='Tap to Watch Tutorial, Then Sign Waiver';
-        try { video.pause(); video.currentTime=0; } catch(e){}
-        window.scrollTo(0,0);
-      }
-
-      function showVideo(){
-        startSection.style.display='none';
-        videoSection.style.display='block';
-        waiverSection.style.display='none';
-        mainTitle.textContent='Watch Tutorial';
-        window.scrollTo(0,0);
-      }
-
-      function showWaiver(){
-        startSection.style.display='none';
-        videoSection.style.display='none';
-        waiverSection.style.display='block';
-        mainTitle.textContent='Sign Waiver';
-        waiverSection.scrollIntoView({behavior:'smooth', block:'start'});
-      }
-
-      function resetWaiver(){
-        waiverFrame.src = BASE_WAIVER_SRC + "?_t=" + Date.now();
-      }
-
-      // init
-      resetWaiver();
-      showStart();
-
-      // Start Group Video
-      startBtn.addEventListener('click', async () => {
-        showVideo();
-        try { await video.play(); } catch(e) {}
-      });
-
-      // Skip Video → Waiver
-      skipVideoBtn.addEventListener('click', () => {
-        resetWaiver();
-        showWaiver();
-      });
-
-      // When video ends → open waiver station
-      video.addEventListener('ended', () => {
-        resetWaiver();
-        showWaiver();
-      });
-
-      // Next Person: blank form again
-      nextPersonBtn.addEventListener('click', () => {
-        resetWaiver();
-        waiverSection.scrollIntoView({behavior:'smooth', block:'start'});
-      });
-
-      // Replay Video: next group
-      replayVideoBtn.addEventListener('click', () => {
-        resetWaiver(); // prep for next signer after video
-        showVideo();
-        try {
-          video.pause(); video.currentTime=0;
-          video.play().catch(()=>{});
-        } catch(e){}
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      });
-    }());
-  </script>
-</body>
-</html>
+        startSection.style.display = 'grid';
+        videoSection.style.display = 'none';
+        waiverSection.style.display = 'none';
+        mainTitle.textContent = 'Tap to Watch Tutorial, Then Sign Waiver';
+        try { video.pause(); video.cur
