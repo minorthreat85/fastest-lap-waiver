@@ -9,59 +9,59 @@
   <style>
     :root { color-scheme: dark; }
     html, body {
-      margin:0; height:100%;
-      background:#000; color:#fff;
+      margin: 0; height: 100%;
+      background: #000; color: #fff;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, sans-serif;
     }
-    body { display:grid; place-items:center; padding:12px; }
+    body { display: grid; place-items: center; padding: 12px; }
 
     .wrap {
-      width:min(100vw - 24px, 100vh * (16/9));
-      max-width:1024px;
-      display:grid;
-      gap:14px;
-      justify-items:center;
+      width: min(100vw - 24px, 100vh * (16/9));
+      max-width: 1024px;
+      display: grid;
+      gap: 14px;
+      justify-items: center;
     }
 
     h1 {
-      margin:6px 0;
-      font-size:clamp(18px,3.2vw,28px);
-      text-align:center;
+      margin: 6px 0;
+      font-size: clamp(18px, 3.2vw, 28px);
+      text-align: center;
     }
 
     .btn{
-      padding:14px 24px;
-      border-radius:12px;
-      background:#e60000;
-      color:#fff;
-      font-size:clamp(15px,2.4vw,18px);
-      font-weight:800;
-      border:0;
-      cursor:pointer;
-      white-space:nowrap;
-      min-width:280px;
+      padding: 14px 24px;
+      border-radius: 12px;
+      background: #e60000;
+      color: #fff;
+      font-size: clamp(15px, 2.4vw, 18px);
+      font-weight: 800;
+      border: 0;
+      cursor: pointer;
+      white-space: nowrap;
+      min-width: 280px;
     }
-    .btn.small {
-      min-width:auto;
-      font-size:14px;
-      padding:10px 16px;
+    .btn.small{
+      min-width: auto;
+      font-size: 14px;
+      padding: 10px 16px;
     }
     .btn:active{ transform: translateY(1px); }
 
     /* Sections */
-    #startSection  { display:grid; gap:12px; justify-items:center; }
-    #videoSection  { display:none; width:100%; }
-    #waiverSection { display:none; width:100%; max-width:1100px; margin:0 auto; }
+    #startSection  { display: grid; gap: 12px; justify-items: center; }
+    #videoSection  { display: none; width: 100%; }
+    #waiverSection { display: none; width: 100%; max-width: 1100px; margin: 0 auto; }
 
     /* Media */
-    #tutorialVideo { width:100%; aspect-ratio:16/9; background:#000; }
-    #waiverFrame   { width:100%; height:1800px; border:0; background:#000; }
+    #tutorialVideo { width: 100%; aspect-ratio: 16/9; background: #000; }
+    #waiverFrame   { width: 100%; height: 1800px; border: 0; background: #000; }
 
-    .waiverTopBar{
-      width:100%;
-      display:flex;
-      justify-content:flex-start;
-      margin-bottom:10px;
+    .topBar{
+      width: 100%;
+      display: flex;
+      justify-content: flex-start;
+      margin-bottom: 10px;
     }
   </style>
 </head>
@@ -70,39 +70,32 @@
   <div class="wrap">
     <h1 id="mainTitle">Tap to Watch Video or Fill Out Waiver</h1>
 
-    <!-- Start screen -->
-    <section id="startSection">
+    <!-- START -->
+    <section id="startSection" aria-label="Start">
       <button id="startVideoBtn" class="btn">🎬 Start Video</button>
       <button id="skipVideoBtn" class="btn">📝 Fill Out Waiver</button>
     </section>
 
-    <!-- Video screen -->
-  <section id="videoSection">
+    <!-- VIDEO -->
+    <section id="videoSection" aria-label="Video">
+      <div class="topBar">
+        <button id="backToMainFromVideoBtn" class="btn small">⬅ Return to Main Menu</button>
+      </div>
 
-  <!-- BACK BUTTON (same as waiver) -->
-  <div class="waiverTopBar">
-    <button id="backToMainFromVideoBtn" class="btn small">
-      ⬅ Return to Main Menu
-    </button>
-  </div>
+      <video id="tutorialVideo" playsinline preload="metadata" controls>
+        <source src="./Waiver-Tutorial.mp4" type="video/mp4">
 
-  <video id="tutorialVideo" playsinline preload="metadata" controls>
-    <source src="./Waiver-Tutorial.mp4" type="video/mp4">
+        <!-- Captions (add both files to your repo root) -->
+        <track kind="subtitles" srclang="en" label="English"
+               src="./Waiver-Tutorial-en.vtt?v=2" default>
+        <track kind="subtitles" srclang="es" label="Español"
+               src="./Waiver-Tutorial-es.vtt?v=2">
+      </video>
+    </section>
 
-    <!-- English captions -->
-    <track kind="subtitles" srclang="en" label="English"
-      src="./Waiver-Tutorial-en.vtt?v=2" default>
-
-    <!-- Spanish captions -->
-    <track kind="subtitles" srclang="es" label="Español"
-      src="./Waiver-Tutorial-es.vtt?v=2">
-  </video>
-</section>
-
-
-    <!-- Waiver screen -->
-    <section id="waiverSection">
-      <div class="waiverTopBar">
+    <!-- WAIVER -->
+    <section id="waiverSection" aria-label="Waiver">
+      <div class="topBar">
         <button id="backToMainBtn" class="btn small">⬅ Return to Main Menu</button>
       </div>
 
@@ -111,8 +104,7 @@
         title="Fastest Lap Waiver"
         src="https://form.jotform.com/220716898706063"
         allowfullscreen
-        frameborder="0">
-      </iframe>
+        frameborder="0"></iframe>
     </section>
   </div>
 
@@ -127,13 +119,19 @@
       const startVideoBtn = document.getElementById('startVideoBtn');
       const skipVideoBtn  = document.getElementById('skipVideoBtn');
       const backToMainBtn = document.getElementById('backToMainBtn');
+      const backToMainFromVideoBtn = document.getElementById('backToMainFromVideoBtn');
 
       const video       = document.getElementById('tutorialVideo');
       const waiverFrame = document.getElementById('waiverFrame');
       const mainTitle   = document.getElementById('mainTitle');
 
       function resetWaiver(){
+        // cache-buster so each person gets a fresh form load
         waiverFrame.src = BASE_WAIVER_SRC + "?_t=" + Date.now();
+      }
+
+      function resetVideo(){
+        try { video.pause(); video.currentTime = 0; } catch(e) {}
       }
 
       function showStart(){
@@ -141,8 +139,8 @@
         videoSection.style.display = 'none';
         waiverSection.style.display = 'none';
         mainTitle.textContent = 'Tap to Watch Video or Fill Out Waiver';
-        try { video.pause(); video.currentTime = 0; } catch(e){}
-        window.scrollTo(0,0);
+        resetVideo();
+        window.scrollTo(0, 0);
       }
 
       function showVideo(){
@@ -150,7 +148,7 @@
         videoSection.style.display = 'block';
         waiverSection.style.display = 'none';
         mainTitle.textContent = 'Watch Video';
-        window.scrollTo(0,0);
+        window.scrollTo(0, 0);
       }
 
       function showWaiver(){
@@ -158,32 +156,47 @@
         videoSection.style.display = 'none';
         waiverSection.style.display = 'block';
         mainTitle.textContent = 'Fill Out Waiver';
-        waiverSection.scrollIntoView({behavior:'smooth', block:'start'});
+        waiverSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
 
-      // Init
+      // INIT
       showStart();
 
+      // Start Video
       startVideoBtn.addEventListener('click', async () => {
         showVideo();
-        try { await video.play(); } catch(e){}
+
+        // Force captions ON (English). Change 'en' to 'es' to default Spanish.
+        try {
+          const tracks = video.textTracks;
+          for (let i = 0; i < tracks.length; i++) {
+            tracks[i].mode = (tracks[i].language === 'en') ? 'showing' : 'disabled';
+          }
+        } catch(e) {}
+
+        try { await video.play(); } catch(e) {}
       });
 
+      // Skip to Waiver
       skipVideoBtn.addEventListener('click', () => {
         resetWaiver();
         showWaiver();
       });
 
+      // Video ends -> Waiver
       video.addEventListener('ended', () => {
         resetWaiver();
         showWaiver();
       });
 
-      backToMainBtn.addEventListener('click', () => {
+      // Return buttons
+      backToMainBtn.addEventListener('click', showStart);
+
+      backToMainFromVideoBtn.addEventListener('click', () => {
+        resetVideo();
         showStart();
       });
     }());
   </script>
 </body>
 </html>
-
