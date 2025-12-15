@@ -61,7 +61,6 @@
       width: 100%;
       display: flex;
       justify-content: flex-start;
-      margin-top: 32px;  
       margin-bottom: 10px;
     }
   </style>
@@ -86,7 +85,7 @@
       <video id="tutorialVideo" playsinline preload="metadata" controls>
         <source src="./Waiver-Tutorial.mp4" type="video/mp4">
 
-        <!-- Captions (add both files to your repo root) -->
+        <!-- Captions (OFF by default; user picks language in CC menu) -->
         <track kind="subtitles" srclang="en" label="English"
                src="./Waiver-Tutorial-en.vtt?v=2">
         <track kind="subtitles" srclang="es" label="Español"
@@ -127,9 +126,17 @@
       const mainTitle   = document.getElementById('mainTitle');
 
       function resetWaiver(){
-        // cache-buster so each person gets a fresh form load
+        // Scroll parent page to top before reloading the iframe
+        window.scrollTo({ top: 0, behavior: 'instant' });
+
+        // Cache-buster so each person gets a fresh form load
         waiverFrame.src = BASE_WAIVER_SRC + "?_t=" + Date.now();
       }
+
+      // After the iframe finishes loading, scroll top again (helps on iPad/slow loads)
+      waiverFrame.addEventListener('load', () => {
+        window.scrollTo({ top: 0, behavior: 'instant' });
+      });
 
       function resetVideo(){
         try { video.pause(); video.currentTime = 0; } catch(e) {}
@@ -166,7 +173,6 @@
       // Start Video
       startVideoBtn.addEventListener('click', async () => {
         showVideo();
-
         try { await video.play(); } catch(e) {}
       });
 
@@ -193,7 +199,3 @@
   </script>
 </body>
 </html>
-
-
-
-
