@@ -166,14 +166,6 @@
       startVideoBtn.addEventListener('click', async () => {
         showVideo();
 
-        // Force captions ON (English). Change 'en' to 'es' to default Spanish.
-        try {
-          const tracks = video.textTracks;
-          for (let i = 0; i < tracks.length; i++) {
-            tracks[i].mode = (tracks[i].language === 'en') ? 'showing' : 'disabled';
-          }
-        } catch(e) {}
-
         try { await video.play(); } catch(e) {}
       });
 
@@ -200,3 +192,4 @@
   </script>
 </body>
 </html>
+
