@@ -158,14 +158,21 @@
         mainTitle.textContent = 'Watch Video';
         window.scrollTo(0, 0);
       }
+function showWaiver(){
+  startSection.style.display = 'none';
+  videoSection.style.display = 'none';
+  waiverSection.style.display = 'block';
 
-      function showWaiver(){
-        startSection.style.display = 'none';
-        videoSection.style.display = 'none';
-        waiverSection.style.display = 'block';
-        mainTitle.textContent = 'Fill Out Waiver';
-        waiverSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
+  // Remove title text entirely on waiver page
+  mainTitle.textContent = '';
+
+  // Scroll parent page to top
+  window.scrollTo({ top: 0, behavior: 'instant' });
+
+  // Reload waiver so it starts at top every time
+  resetWaiver();
+}
+
 
       // INIT
       showStart();
@@ -199,3 +206,4 @@
   </script>
 </body>
 </html>
+
